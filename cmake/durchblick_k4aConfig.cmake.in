@@ -1,0 +1,21 @@
+# durchblick_k4a: the libraries of durchblick-azure-kinect (CMakeLists.txt). Targets durchblick_k4a::durchblick_k4a
+# (the node, its sources and the depth engine's EGL context) and, if built with body tracking,
+# durchblick_k4a::durchblick_k4abt. Variables durchblick_k4a_CUDA and durchblick_k4a_BODY_TRACKING: what was built.
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+set(durchblick_k4a_CUDA @DURCHBLICK_K4A_CUDA@)
+set(durchblick_k4a_BODY_TRACKING @DURCHBLICK_K4A_BODY_TRACKING@)
+find_dependency(durchblick 0.4)
+find_dependency(k4a 1.4)
+find_dependency(k4arecord 1.4)
+find_dependency(nlohmann_json 3)
+find_dependency(JPEG)
+if(durchblick_k4a_CUDA)
+  find_dependency(CUDAToolkit 12)
+endif()
+if(durchblick_k4a_BODY_TRACKING)
+  find_dependency(k4abt 1.1)
+endif()
+include("${CMAKE_CURRENT_LIST_DIR}/durchblick_k4aTargets.cmake")
+check_required_components(durchblick_k4a)
