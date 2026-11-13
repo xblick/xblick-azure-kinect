@@ -9,12 +9,12 @@
 #include <memory>
 #include <vector>
 
-#include "durchblick/msg.hpp"
+#include "xblick/msg.hpp"
 
-namespace durchblick::k4a_node
+namespace xblick::k4a_node
 {
     // The CameraInfo of the rectified image: K = P's left 3x3, no distortion (plumb_bob, zeros), R = I, P as given.
-    durchblick::CameraInfo rectified_info(const durchblick::CameraInfo& raw);
+    xblick::CameraInfo rectified_info(const xblick::CameraInfo& raw);
 
     struct RectifyMap
     {
@@ -32,7 +32,7 @@ namespace durchblick::k4a_node
 
     // The map of a camera (plumb_bob or rational_polynomial; R must be the identity, P a monocular camera's: no
     // skew, no translation). Throws otherwise.
-    RectifyMap rectify_map(const durchblick::CameraInfo& raw);
+    RectifyMap rectify_map(const xblick::CameraInfo& raw);
 
     // Bilinear remap of an rgb8 image (rows without padding) of the map's size into dst (the same size).
     void remap_rgb8(const RectifyMap& map, const std::uint8_t* src, std::uint8_t* dst);
@@ -41,7 +41,7 @@ namespace durchblick::k4a_node
     // 0 (no depth) outside: blending would make up depths between a surface and what is behind it, or a hole.
     void remap_depth16(const RectifyMap& map, const std::uint16_t* src, std::uint16_t* dst);
 
-#ifdef DURCHBLICK_K4A_CUDA
+#ifdef XBLICK_K4A_CUDA
     // The remap on the GPU with NPP (nppiRemap, bilinear), from and to device memory.
     class GpuRectifier
     {
@@ -60,4 +60,4 @@ namespace durchblick::k4a_node
         std::unique_ptr<Impl> impl_;
     };
 #endif
-}  // namespace durchblick::k4a_node
+}  // namespace xblick::k4a_node

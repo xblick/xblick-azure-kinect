@@ -14,15 +14,15 @@
 #include <vector>
 
 #include "depth_to_color.hpp"
-#include "durchblick/camera.hpp"
+#include "xblick/camera.hpp"
 #include "jpeg.hpp"
 #include "rectify.hpp"
 
-#ifdef DURCHBLICK_K4A_CUDA
+#ifdef XBLICK_K4A_CUDA
 #include "nvjpeg_decoder.hpp"
 #endif
 
-namespace durchblick::k4a_node
+namespace xblick::k4a_node
 {
     namespace
     {
@@ -170,7 +170,7 @@ namespace durchblick::k4a_node
         k4a::image depth_in_color;
         std::unique_ptr<DepthToColor> cpu_depth_to_color;  // else
         CpuJpegDecoder cpu_jpeg;
-#ifdef DURCHBLICK_K4A_CUDA
+#ifdef XBLICK_K4A_CUDA
         std::unique_ptr<NvJpegDecoder> nv_jpeg;
         std::unique_ptr<GpuRectifier> gpu_rect;
 #endif
@@ -303,7 +303,7 @@ namespace durchblick::k4a_node
                 return;
             }
             // decoded once, for the pixels of color and for color_rect
-#ifdef DURCHBLICK_K4A_CUDA
+#ifdef XBLICK_K4A_CUDA
             if (nv_jpeg)
             {
                 const std::uint64_t ptr = nv_jpeg->decode(jpeg, color_width, color_height);
@@ -467,10 +467,10 @@ namespace durchblick::k4a_node
                 PublisherOptions{.encoding = "rgb8", .frame_id = record.color_frame_id, .source = options.source,
                                  .camera_info = info, .codec = kJpeg, .slots = options.slots,
                                  .cuda_device = options.cuda_device});
-#ifndef DURCHBLICK_K4A_CUDA
+#ifndef XBLICK_K4A_CUDA
             if (options.cuda_device)
             {
-                throw std::invalid_argument("--cuda-device: built without CUDA (DURCHBLICK_K4A_CUDA)");
+                throw std::invalid_argument("--cuda-device: built without CUDA (XBLICK_K4A_CUDA)");
             }
 #endif
             m.rect_map = rectify_map(info);
@@ -479,7 +479,7 @@ namespace durchblick::k4a_node
                 PublisherOptions{.encoding = "rgb8", .frame_id = record.color_frame_id, .source = options.source,
                                  .camera_info = rectified_info(info), .codec = kJpeg, .slots = options.slots,
                                  .cuda_device = options.cuda_device});
-#ifdef DURCHBLICK_K4A_CUDA
+#ifdef XBLICK_K4A_CUDA
             if (options.cuda_device)
             {
                 m.nv_jpeg = std::make_unique<NvJpegDecoder>(*options.cuda_device);
@@ -851,10 +851,10 @@ namespace durchblick::k4a_node
         {
             throw std::invalid_argument("CUDA device '" + name + "': a CUDA device ordinal or none");
         }
-#ifdef DURCHBLICK_K4A_CUDA
+#ifdef XBLICK_K4A_CUDA
         return std::stoi(name);
 #else
-        throw std::invalid_argument("CUDA device " + name + ": built without CUDA (DURCHBLICK_K4A_CUDA)");
+        throw std::invalid_argument("CUDA device " + name + ": built without CUDA (XBLICK_K4A_CUDA)");
 #endif
     }
-}  // namespace durchblick::k4a_node
+}  // namespace xblick::k4a_node

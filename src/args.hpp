@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace durchblick::k4a_node
+namespace xblick::k4a_node
 {
     class Args
     {
@@ -95,4 +95,4 @@ namespace durchblick::k4a_node
         std::map<std::string, std::vector<std::string>> values_;
         std::vector<std::string> used_;
     };
-}  // namespace durchblick::k4a_node
+}  // namespace xblick::k4a_node

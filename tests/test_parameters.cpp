@@ -1,5 +1,5 @@
 // Tests without a camera: the rcl_interfaces CDR of Durchblick's core (byte-identical to rosbags), the camera's
-// parameters (durchblick::Parameters) and their services over Zenoh, declared on fake colour controls, and the clock's estimators on synthetic
+// parameters (xblick::Parameters) and their services over Zenoh, declared on fake colour controls, and the clock's estimators on synthetic
 // arrival delays (fixed part, load, outliers, drift, a jump).
 #include <algorithm>
 #include <chrono>
@@ -17,17 +17,17 @@
 #include <vector>
 
 #include "clock.hpp"
-#include "durchblick/camera.hpp"
-#include "durchblick/parameters.hpp"
+#include "xblick/camera.hpp"
+#include "xblick/parameters.hpp"
 #include "settings.hpp"
 #include "source.hpp"
 
 namespace
 {
-    using namespace durchblick;
-    using namespace durchblick::k4a_node;
+    using namespace xblick;
+    using namespace xblick::k4a_node;
     using namespace std::chrono_literals;
-    namespace type = durchblick::parameter_type;
+    namespace type = xblick::parameter_type;
 
     int failures = 0;
 
@@ -169,7 +169,7 @@ namespace
 
     void test_overrides()
     {
-        const std::string path = "/tmp/durchblick_k4a_test_params.yaml";
+        const std::string path = "/tmp/xblick_k4a_test_params.yaml";
         {
             std::ofstream f(path);
             f << "/robot/azurekinect:\n  ros__parameters:\n    fps: 15\n    depth:\n      mode: WFOV_2X2BINNED\n"

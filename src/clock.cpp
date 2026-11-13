@@ -3,7 +3,7 @@
 #include <cmath>
 #include <stdexcept>
 
-namespace durchblick::k4a_node
+namespace xblick::k4a_node
 {
     ClockEstimator clock_estimator_from_name(const std::string& name)
     {
@@ -114,4 +114,4 @@ namespace durchblick::k4a_node
         out.swap(residuals_us_);
         return out;
     }
-}  // namespace durchblick::k4a_node
+}  // namespace xblick::k4a_node

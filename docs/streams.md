@@ -1,4 +1,4 @@
-# Streams of durchblick-azure-kinect
+# Streams of xblick-azure-kinect
 
 This page describes every stream of the node, the calibration files, the rectified colour image and the point
 clouds. The README has the short table.
@@ -63,18 +63,18 @@ and `--imu-frame-id` changes it. The message contains no orientation. `--no-imu`
 | Status | Publisher | Content |
 | --- | --- | --- |
 | `azure_kinect` | the camera node | Captures per second, drops, restarts, rate and time per stream, IMU rate, temperature, firmware. |
-| `body_tracking` | `durchblick-k4abt` | Rates, latency, unpaired frames, busy frames, rate-limited frames, settings. |
+| `body_tracking` | `xblick-k4abt` | Rates, latency, unpaired frames, busy frames, rate-limited frames, settings. |
 | `point_cloud` | Durchblick's point cloud node | The status of that node. |
 
 The status `azure_kinect` uses the serial number of the device as `hardware_id`. Its level is WARN after drops, after
 restarts, or while the device delivers less than 90 % of its frame rate. Its level is ERROR while no captures arrive.
 [parameters.md](parameters.md#diagnostics) lists the further values.
 
-`blick diagnostics robot --connect <camera host>` prints the diagnostics.
+`xblick diagnostics robot --connect <camera host>` prints the diagnostics.
 
 ### Bodies
 
-`durchblick-k4abt` publishes its results as JSON on `<base>/bodies`. The results use the
+`xblick-k4abt` publishes its results as JSON on `<base>/bodies`. The results use the
 model `K4ABT_BODY_32` with its 32 joints, millimetres, and the depth camera's frame. Each result
 carries `stamp_ns`, the stamp of the depth frame that the tracker worked on.
 
@@ -135,14 +135,14 @@ colour image at the SDK's point. Every pixel is black where that point is outsid
 
 ## Point clouds
 
-This node computes no point clouds. Durchblick's point cloud node `durchblick-points` reads the depth and colour
+This node computes no point clouds. Durchblick's point cloud node `xblick-points` reads the depth and colour
 streams like any other reader and publishes `<base>/points`.
 
 ```bash
 # on the camera's host: clouds in the depth camera's geometry
-durchblick-points --depth robot/azurekinect/depth --color robot/azurekinect/color
+xblick-points --depth robot/azurekinect/depth --color robot/azurekinect/color
 # clouds in the colour camera's geometry
-durchblick-points --depth robot/azurekinect/depth_to_color --color robot/azurekinect/color \
+xblick-points --depth robot/azurekinect/depth_to_color --color robot/azurekinect/color \
   --output robot/azurekinect/points_color
 ```
 
@@ -167,7 +167,7 @@ node's streams. In CUDA builds it reads them from the CUDA rings.
 | Colour with `depth_to_color` as depth stream, on the recording | equal for all points |
 
 Durchblick's
-[point cloud guide](https://github.com/xblick/durchblick/blob/main/docs/guides/point-clouds.md) has
+[point cloud guide](https://github.com/xblick/xblick/blob/main/docs/guides/point-clouds.md) has
 the details of that node.
 
 ## Viewing
@@ -176,12 +176,12 @@ A viewer that connects to the router of the camera host receives every program t
 point cloud node.
 
 ```bash
-blick list --connect <camera host>
-blick rerun robot/azurekinect/color robot/azurekinect/depth robot/azurekinect/ir \
+xblick list --connect <camera host>
+xblick rerun robot/azurekinect/color robot/azurekinect/depth robot/azurekinect/ir \
   robot/azurekinect/depth_to_color --points robot/azurekinect/points --spawn --connect <camera host>
 ```
 
-Name the streams before `--connect`. `blick rerun` shows the following:
+Name the streams before `--connect`. `xblick rerun` shows the following:
 
 - colour, depth and `depth_to_color` as images, and the two depth streams also as point clouds in 3D,
 - the IR image,
@@ -190,5 +190,5 @@ Name the streams before `--connect`. `blick rerun` shows the following:
 - IMU and diagnostics as time series and as a text log.
 
 The viewer uses `tf_static` to place the colour camera beside the depth camera. Durchblick's
-[viewer guide](https://github.com/xblick/durchblick/blob/main/docs/guides/viewer.md) describes the
+[viewer guide](https://github.com/xblick/xblick/blob/main/docs/guides/viewer.md) describes the
 viewer.

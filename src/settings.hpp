@@ -1,4 +1,4 @@
-// The Azure Kinect's parameters (Durchblick's durchblick::Parameters, ROS 2's model; the core's docs/parameters.md):
+// The Azure Kinect's parameters (Durchblick's xblick::Parameters, ROS 2's model; the core's docs/parameters.md):
 //
 //   runtime    color.exposure_time_us, color.auto_exposure, color.white_balance_k, color.auto_white_balance,
 //              color.brightness, color.contrast, color.saturation, color.sharpness, color.backlight_compensation,
@@ -23,9 +23,9 @@
 #include <k4a/k4a.hpp>
 
 #include "clock.hpp"
-#include "durchblick/parameters.hpp"
+#include "xblick/parameters.hpp"
 
-namespace durchblick::k4a_node
+namespace xblick::k4a_node
 {
     struct DeviceOptions;
     struct CalibrationRecord;
@@ -70,7 +70,7 @@ namespace durchblick::k4a_node
     // <base>/set_parameters); throws unless each part is a ROS name.
     std::pair<std::string, std::string> node_of(const std::string& base);
 
-    // The camera's parameters as the diagnostics show them: durchblick::Parameters' declare, recording each one's unit,
+    // The camera's parameters as the diagnostics show them: xblick::Parameters' declare, recording each one's unit,
     // and counting the changes once the camera runs (started()); a writer's exception (the SDK refused) becomes the
     // change's reason, as a writer's text does.
     class CameraParameters
@@ -112,4 +112,4 @@ namespace durchblick::k4a_node
     void declare_recording_parameters(CameraParameters& parameters, const CalibrationRecord& record);
     // The colour controls with the device's ranges; apply_all() then sets them on the device.
     void declare_color_controls(CameraParameters& parameters, ColorControls& controls);
-}  // namespace durchblick::k4a_node
+}  // namespace xblick::k4a_node

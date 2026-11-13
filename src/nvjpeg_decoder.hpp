@@ -1,13 +1,13 @@
 // JPEG frames decoded on the GPU with nvJPEG into device memory (rgb8 rows, no padding), for Durchblick's CUDA ring
 // without a trip through host memory: the colour frame of a consumer on the GPU (a network, a renderer) never leaves
-// the device. Built with DURCHBLICK_K4A_CUDA (CUDA toolkit with nvJPEG).
+// the device. Built with XBLICK_K4A_CUDA (CUDA toolkit with nvJPEG).
 #pragma once
 
 #include <cstdint>
 #include <memory>
 #include <span>
 
-namespace durchblick::k4a_node
+namespace xblick::k4a_node
 {
     class NvJpegDecoder
     {
@@ -30,4 +30,4 @@ namespace durchblick::k4a_node
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };
-}  // namespace durchblick::k4a_node
+}  // namespace xblick::k4a_node

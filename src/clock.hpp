@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 
-namespace durchblick::k4a_node
+namespace xblick::k4a_node
 {
     enum class ClockEstimator
     {
@@ -80,4 +80,4 @@ namespace durchblick::k4a_node
         std::optional<std::chrono::microseconds> last_device_;
         std::vector<double> residuals_us_;
     };
-}  // namespace durchblick::k4a_node
+}  // namespace xblick::k4a_node

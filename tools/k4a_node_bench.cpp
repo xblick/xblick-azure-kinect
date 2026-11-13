@@ -33,7 +33,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "durchblick/camera.hpp"
+#include "xblick/camera.hpp"
 #include "egl_glx.hpp"
 #include "node.hpp"
 
@@ -41,8 +41,8 @@ extern char** environ;
 
 namespace
 {
-    using namespace durchblick;
-    using namespace durchblick::k4a_node;
+    using namespace xblick;
+    using namespace xblick::k4a_node;
     using namespace std::chrono_literals;
 
     std::atomic<bool> stop{false}, restart{false};

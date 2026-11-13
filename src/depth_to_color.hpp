@@ -42,10 +42,10 @@
 
 #include <k4a/k4a.h>
 
-#include "durchblick/msg.hpp"
+#include "xblick/msg.hpp"
 #include "rectify.hpp"
 
-namespace durchblick::k4a_node
+namespace xblick::k4a_node
 {
     class DepthToColor
     {
@@ -54,7 +54,7 @@ namespace durchblick::k4a_node
         // colour camera's CameraInfo (CalibrationRecord::color_info()), whose P is the rectified camera; map: its
         // rectify map (rectify_map(color)), for the pixels outside the colour image. interpolate: the depth follows the
         // surface's slope across a footprint.
-        DepthToColor(const k4a_calibration_t& calibration, const durchblick::CameraInfo& color, const RectifyMap& map,
+        DepthToColor(const k4a_calibration_t& calibration, const xblick::CameraInfo& color, const RectifyMap& map,
                      bool interpolate = true, bool drop_flying = true, bool drop_sparse = true);
 
         // depth pixels left out as sparse in the last rectified() frame
@@ -98,4 +98,4 @@ namespace durchblick::k4a_node
         std::vector<float> pu_, pv_, ps_, pz_;            // per depth pixel of the frame: canvas position, footprint
                                                           // scale z / Z, Z (0: none)
     };
-}  // namespace durchblick::k4a_node
+}  // namespace xblick::k4a_node

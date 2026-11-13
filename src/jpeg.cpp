@@ -7,7 +7,7 @@
 
 #include <jpeglib.h>
 
-namespace durchblick::k4a_node
+namespace xblick::k4a_node
 {
     namespace
     {
@@ -177,4 +177,4 @@ namespace durchblick::k4a_node
         jpeg_finish_decompress(&m.cinfo);
         return m.pixels.data();
     }
-}  // namespace durchblick::k4a_node
+}  // namespace xblick::k4a_node

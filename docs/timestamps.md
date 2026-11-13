@@ -1,7 +1,7 @@
-# Timestamps of durchblick-azure-kinect
+# Timestamps of xblick-azure-kinect
 
 This page explains how the node computes the stamp of a frame and how exact that stamp is. Durchblick's
-[timestamps page](https://github.com/xblick/durchblick/blob/main/docs/concepts/timestamps.md)
+[timestamps page](https://github.com/xblick/xblick/blob/main/docs/concepts/timestamps.md)
 defines the fields that every Durchblick sample has: `header.stamp`, and `seq`, `publish_called_ns` and `publish_ns`
 in the attachment. The code is in `src/clock.hpp`.
 
@@ -68,7 +68,7 @@ Each result on `<base>/bodies` carries `stamp_ns`. It is the stamp of the depth 
 
 ## Attachments
 
-Durchblick's publishers write the attachments of the camera streams. `durchblick-k4abt` writes the attachment of the
+Durchblick's publishers write the attachments of the camera streams. `xblick-k4abt` writes the attachment of the
 bodies itself, as the same object with these fields:
 
 | Field | Value |

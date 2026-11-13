@@ -22,7 +22,7 @@
 
 #include "args.hpp"
 #include "depth_to_color.hpp"
-#include "durchblick/camera.hpp"
+#include "xblick/camera.hpp"
 #include "egl_glx.hpp"
 #include "node.hpp"
 #include "rectify.hpp"
@@ -34,8 +34,8 @@ namespace
 
 int main(int argc, char** argv)
 {
-    using namespace durchblick;
-    using namespace durchblick::k4a_node;
+    using namespace xblick;
+    using namespace xblick::k4a_node;
     std::signal(SIGINT, [](int) { stop = true; });
     std::signal(SIGTERM, [](int) { stop = true; });
     try

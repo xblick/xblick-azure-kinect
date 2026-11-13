@@ -1,11 +1,11 @@
-// durchblick-azure-kinect-parameters: a node's parameters over its ROS 2 parameter services (Durchblick's
-// durchblick/parameters.hpp), as `ros2 param`. Node-agnostic (any node serving them); Durchblick's `blick param`
+// xblick-azure-kinect-parameters: a node's parameters over its ROS 2 parameter services (Durchblick's
+// xblick/parameters.hpp), as `ros2 param`. Node-agnostic (any node serving them); Durchblick's `xblick param`
 // does the same in Python, this one for a camera PC with only the C++ part.
 //
-//   durchblick-azure-kinect-parameters --node robot/azurekinect --list
-//   durchblick-azure-kinect-parameters --node robot/azurekinect --describe [NAME ...]   (none: all)
-//   durchblick-azure-kinect-parameters --node robot/azurekinect --get [NAME ...]        (none: all)
-//   durchblick-azure-kinect-parameters --node robot/azurekinect --set NAME:=VALUE ... [--atomically]
+//   xblick-azure-kinect-parameters --node robot/azurekinect --list
+//   xblick-azure-kinect-parameters --node robot/azurekinect --describe [NAME ...]   (none: all)
+//   xblick-azure-kinect-parameters --node robot/azurekinect --get [NAME ...]        (none: all)
+//   xblick-azure-kinect-parameters --node robot/azurekinect --set NAME:=VALUE ... [--atomically]
 //
 // VALUE as a YAML scalar (true, 15625, 0.5, NFOV_UNBINNED), read for the parameter's type. Zenoh: as the camera node (--connect, --listen,
 // --zenoh-config). Exits 1 if a set fails.
@@ -15,13 +15,13 @@
 #include <vector>
 
 #include "args.hpp"
-#include "durchblick/camera.hpp"
-#include "durchblick/parameters.hpp"
+#include "xblick/camera.hpp"
+#include "xblick/parameters.hpp"
 
 namespace
 {
-    using namespace durchblick;
-    using durchblick::k4a_node::Args;
+    using namespace xblick;
+    using xblick::k4a_node::Args;
 
     std::string describe_line(const ParameterDescriptor& d)
     {
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
     }
     catch (const std::exception& e)
     {
-        std::cerr << "durchblick-azure-kinect-parameters: " << e.what() << std::endl;
+        std::cerr << "xblick-azure-kinect-parameters: " << e.what() << std::endl;
         return 1;
     }
     return 0;

@@ -8,7 +8,7 @@
 
 #include <k4arecord/playback.h>
 
-namespace durchblick::k4a_node
+namespace xblick::k4a_node
 {
     namespace
     {
@@ -107,7 +107,7 @@ namespace durchblick::k4a_node
                     {
                         throw std::runtime_error(std::string("get_capture failed again after a restart: ") + e.what());
                     }
-                    std::cerr << "durchblick-azure-kinect: get_capture failed (" << e.what()
+                    std::cerr << "xblick-azure-kinect: get_capture failed (" << e.what()
                               << "), restarting the cameras" << std::endl;
                     if (imu_)
                     {
@@ -358,4 +358,4 @@ namespace durchblick::k4a_node
         return std::string(source.live() ? "device " : "recording ") + r.serial + ", " + depth_mode_name(r.depth_mode) +
                ", colour " + color_resolution_name(r.color_resolution) + ", " + std::to_string(r.fps) + " fps";
     }
-}  // namespace durchblick::k4a_node
+}  // namespace xblick::k4a_node

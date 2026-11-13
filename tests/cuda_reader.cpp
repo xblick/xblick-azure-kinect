@@ -9,11 +9,11 @@
 
 #include <cuda.h>
 
-#include "durchblick/camera.hpp"
+#include "xblick/camera.hpp"
 
 int main(int argc, char** argv)
 {
-    using namespace durchblick;
+    using namespace xblick;
     if (argc != 4)
     {
         std::fprintf(stderr, "usage: test_k4a_cuda_reader ENDPOINT BASE OUT_FILE\n");

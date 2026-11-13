@@ -1,11 +1,11 @@
-# Parameters of durchblick-azure-kinect
+# Parameters of xblick-azure-kinect
 
 This page lists the camera's parameters and explains how you set them at the start and at run time. It also lists the
 values that the node reports in its diagnostics.
 
-The parameters follow the model of ROS 2. The node uses Durchblick's `durchblick::Parameters` and declares each
+The parameters follow the model of ROS 2. The node uses Durchblick's `xblick::Parameters` and declares each
 parameter with an `rcl_interfaces/msg/ParameterDescriptor` in `src/settings.hpp`. Durchblick's
-[parameters reference](https://github.com/xblick/durchblick/blob/main/docs/reference/parameters.md)
+[parameters reference](https://github.com/xblick/xblick/blob/main/docs/reference/parameters.md)
 describes the services, the keys, the params files and the checks.
 
 ## The parameters
@@ -91,13 +91,13 @@ the core's types again.
 The client works like `ros2 param`:
 
 ```bash
-durchblick-azure-kinect-parameters --node robot/azurekinect --list
-durchblick-azure-kinect-parameters --node robot/azurekinect --describe color.exposure_time_us
-durchblick-azure-kinect-parameters --node robot/azurekinect --get
-durchblick-azure-kinect-parameters --node robot/azurekinect --set color.exposure_time_us:=8000 color.gain:=10
+xblick-azure-kinect-parameters --node robot/azurekinect --list
+xblick-azure-kinect-parameters --node robot/azurekinect --describe color.exposure_time_us
+xblick-azure-kinect-parameters --node robot/azurekinect --get
+xblick-azure-kinect-parameters --node robot/azurekinect --set color.exposure_time_us:=8000 color.gain:=10
 ```
 
-Durchblick's Python command `blick param` does the same, and so does the Parameters tab of Durchblick's
+Durchblick's Python command `xblick param` does the same, and so does the Parameters tab of Durchblick's
 terminal interface. The C++ client here is for a camera PC that has only the C++ part of Durchblick.
 
 ## How the descriptor expresses our needs

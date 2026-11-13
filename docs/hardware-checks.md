@@ -19,8 +19,8 @@ This check measures the bias of the stamps.
    small OpenGL or SDL program that draws `CLOCK_REALTIME` in ms as large digits at every vsync. Use a monitor with
    120-240 Hz.
 2. Point the colour camera at the monitor and publish `color`.
-3. Save 300 frames with their stamps. Use `blick snapshot` in a loop or a short recording with
-   `blick record`.
+3. Save 300 frames with their stamps. Use `xblick snapshot` in a loop or a short recording with
+   `xblick record`.
 
 **Look for.** Compare the clock value in each image with the stamp of the frame. Read the value by OCR, or by hand
 for 20 frames. The shown value is the time at which the monitor drew it, so subtract the latency of the monitor. Take
@@ -38,10 +38,10 @@ LED flashes at known `CLOCK_REALTIME` times. Find the first frame that shows it 
 
 ## 2. Colour and depth of one capture
 
-**Run.** Start `durchblick-azure-kinect`. `blick diagnostics` shows per report "colour - depth stamp
+**Run.** Start `xblick-azure-kinect`. `xblick diagnostics` shows per report "colour - depth stamp
 ms", "colour exposure ms", "depth exposure ms" and "predicted if start-aligned ms".
 [parameters.md](parameters.md#diagnostics) explains them. Use auto exposure in a bright and in a dim room. Then use
-manual exposure: set `color.exposure_time_us:=8000` and `:=30000` with `durchblick-azure-kinect-parameters --set`.
+manual exposure: set `color.exposure_time_us:=8000` and `:=30000` with `xblick-azure-kinect-parameters --set`.
 
 **Look for.** Check whether "colour - depth stamp ms" follows "predicted if start-aligned ms" as the exposure changes,
 or whether it stays near 0. Check whether "depth exposure ms" is the SDK's value or carries "(spec)".
@@ -127,9 +127,9 @@ another PC shows includes this offset.
 
 ## 8. Colour controls
 
-**Run.** `durchblick-azure-kinect-parameters --node <base> --describe` prints the ranges and defaults that the device
+**Run.** `xblick-azure-kinect-parameters --node <base> --describe` prints the ranges and defaults that the device
 reports. Then set each control in turn: `--set color.<control>:=<min>`, `:=<max>` and a value between. For exposure
-and white balance, also set `color.auto_*:=true` and back to `false`. Watch `color` in `blick rerun`.
+and white balance, also set `color.auto_*:=true` and back to `false`. Watch `color` in `xblick rerun`.
 
 **Expect.** The image changes as the control says. `--get` returns the value that the camera uses. The camera rounds
 the exposure to a supported step, at most the frame period. The node refuses a value out of range and names the
@@ -146,9 +146,9 @@ the SDK wrote without a device. Check these with a camera:
 
 - the node with the camera and `--cuda-device`,
 - the status line: captures per second, dropped captures, added Huffman tables,
-- `blick rerun` with the camera's images,
+- `xblick rerun` with the camera's images,
 - the depth images from the depth engine in its EGL context, which we tested only with the transformation,
-- `durchblick-k4abt` with a person in view, which we tested only with the mannequin,
+- `xblick-k4abt` with a person in view, which we tested only with the mannequin,
 - the point cloud node with the real camera.
 
 ## Sources

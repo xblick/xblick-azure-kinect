@@ -6,7 +6,7 @@
 #include <cuda_runtime.h>
 #include <nvjpeg.h>
 
-namespace durchblick::k4a_node
+namespace xblick::k4a_node
 {
     namespace
     {
@@ -110,4 +110,4 @@ namespace durchblick::k4a_node
     std::uint64_t NvJpegDecoder::stream() const { return reinterpret_cast<std::uint64_t>(impl_->stream); }
 
     void NvJpegDecoder::synchronize() { check(cudaStreamSynchronize(impl_->stream), "cudaStreamSynchronize"); }
-}  // namespace durchblick::k4a_node
+}  // namespace xblick::k4a_node

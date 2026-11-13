@@ -16,7 +16,7 @@
 #include "calibration.hpp"
 #include "settings.hpp"
 
-namespace durchblick::k4a_node
+namespace xblick::k4a_node
 {
     struct DeviceOptions
     {
@@ -75,4 +75,4 @@ namespace durchblick::k4a_node
 
     // "device 000123456789, NFOV_UNBINNED, colour 720P, 30 fps" (or "recording ...")
     std::string describe(const CaptureSource& source);
-}  // namespace durchblick::k4a_node
+}  // namespace xblick::k4a_node

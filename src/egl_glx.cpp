@@ -51,7 +51,7 @@ namespace
 
     void fail(const char* what)
     {
-        std::fprintf(stderr, "durchblick-azure-kinect: depth engine context: %s (EGL error 0x%x)\n", what,
+        std::fprintf(stderr, "xblick-azure-kinect: depth engine context: %s (EGL error 0x%x)\n", what,
                      unsigned(eglGetError()));
     }
 
@@ -92,13 +92,13 @@ namespace
                 return d;
             }
         }
-        std::fprintf(stderr, "durchblick-azure-kinect: depth engine context: no EGL device is CUDA device %d (%d EGL "
+        std::fprintf(stderr, "xblick-azure-kinect: depth engine context: no EGL device is CUDA device %d (%d EGL "
                      "devices)\n", cuda_device, int(n));
         return EGL_NO_DISPLAY;
     }
 }  // namespace
 
-void durchblick::k4a_node::use_egl_for_depth_engine(int device)
+void xblick::k4a_node::use_egl_for_depth_engine(int device)
 {
     std::lock_guard lock(mutex);
     cuda_device = device;
@@ -111,7 +111,7 @@ extern "C"
         std::lock_guard lock(mutex);
         if (cuda_device < 0)
         {
-            std::fprintf(stderr, "durchblick-azure-kinect: depth engine context: no GPU chosen "
+            std::fprintf(stderr, "xblick-azure-kinect: depth engine context: no GPU chosen "
                                  "(use_egl_for_depth_engine was not called)\n");
             return nullptr;
         }
@@ -235,12 +235,12 @@ extern "C"
                 case GLX_RENDER_TYPE:
                     if (a[1] != GLX_RGBA_TYPE)
                     {
-                        std::fprintf(stderr, "durchblick-azure-kinect: depth engine context: render type 0x%x\n", a[1]);
+                        std::fprintf(stderr, "xblick-azure-kinect: depth engine context: render type 0x%x\n", a[1]);
                         return nullptr;
                     }
                     break;
                 default:
-                    std::fprintf(stderr, "durchblick-azure-kinect: depth engine context: unknown GLX context "
+                    std::fprintf(stderr, "xblick-azure-kinect: depth engine context: unknown GLX context "
                                          "attribute 0x%x\n", a[0]);
                     return nullptr;
             }
@@ -262,7 +262,7 @@ extern "C"
             delete context;
             return nullptr;
         }
-        std::fprintf(stderr, "durchblick-azure-kinect: depth engine: OpenGL %d.%d context on CUDA device %d (EGL, no X)\n",
+        std::fprintf(stderr, "xblick-azure-kinect: depth engine: OpenGL %d.%d context on CUDA device %d (EGL, no X)\n",
                      major, minor, cuda_device);
         return context;
     }

@@ -28,7 +28,7 @@
 #include <jpeglib.h>
 #include <nlohmann/json.hpp>
 
-#ifdef DURCHBLICK_K4A_CUDA
+#ifdef XBLICK_K4A_CUDA
 #include <cuda_runtime.h>
 
 #include "nvjpeg_decoder.hpp"
@@ -37,8 +37,8 @@
 #include "calibration.hpp"
 #include "clock.hpp"
 #include "depth_to_color.hpp"
-#include "durchblick/camera.hpp"
-#include "durchblick/points.hpp"
+#include "xblick/camera.hpp"
+#include "xblick/points.hpp"
 #include "egl_glx.hpp"
 #include "jpeg.hpp"
 #include "node.hpp"
@@ -49,8 +49,8 @@
 
 namespace
 {
-    using namespace durchblick;
-    using namespace durchblick::k4a_node;
+    using namespace xblick;
+    using namespace xblick::k4a_node;
     using namespace std::chrono_literals;
 
     int failures = 0;
@@ -226,7 +226,7 @@ namespace
     CalibrationRecord test_calibration_files(const CalibrationRecord& record)
     {
         const auto dir = std::filesystem::temp_directory_path() /
-                         ("durchblick_k4a_calibration_" + std::to_string(::getpid()));
+                         ("xblick_k4a_calibration_" + std::to_string(::getpid()));
         std::filesystem::create_directories(dir);
         const auto file = [&](const std::string& name, const CameraInfo& info) {
             const std::string path = (dir / name).string();
@@ -884,7 +884,7 @@ namespace
         }
     }
 
-#ifdef DURCHBLICK_K4A_CUDA
+#ifdef XBLICK_K4A_CUDA
     // The colour decoded on the GPU (nvJPEG): the same picture as the CPU's decoding (rounding apart), in the decoder
     // and through the node's CUDA ring to another process (tests/cuda_reader.cpp).
     void compare(const std::uint8_t* got, const std::uint8_t* reference, std::size_t n, const std::string& what)
@@ -1059,7 +1059,7 @@ namespace
 #endif
 
 #ifdef K4A_POINTS_PROGRAM
-    // Durchblick's point cloud node (durchblick-points, a process of its own) on this node's depth and colour, against
+    // Durchblick's point cloud node (xblick-points, a process of its own) on this node's depth and colour, against
     // the SDK: every point as k4a_calibration_2d_to_3d puts it, its colour from the colour pixel
     // k4a_calibration_3d_to_2d projects it to. The test calibration's lens model is the SDK's own (Brown-Conrady),
     // the node's the rational_polynomial of the published camera_info: the same function, so this checks the
@@ -1067,7 +1067,7 @@ namespace
     void test_point_cloud(const CalibrationRecord& record, zenoh::Session& node_session, int port)
     {
         std::optional<int> cuda_device;
-#ifdef DURCHBLICK_K4A_CUDA
+#ifdef XBLICK_K4A_CUDA
         cuda_device = 0;  // the node takes depth and colour from the CUDA rings, as on the robot
 #endif
         Node node(node_session, NodeOptions{.base = "t/k4a_pc", .source = "test", .cuda_device = cuda_device,
@@ -1400,7 +1400,7 @@ int main()
         test_sparse_pixels(files);
         test_color_rect(record, node_session, client, "t/k4a_rect", std::nullopt);
         test_color_rect(files, node_session, client, "t/k4a_rect_files", std::nullopt);  // P != K: a zoomed-out view
-#ifdef DURCHBLICK_K4A_CUDA
+#ifdef XBLICK_K4A_CUDA
         test_cuda_color(record, node_session, port);
         test_color_rect(files, node_session, client, "t/k4a_rect_cuda", 0);
 #endif

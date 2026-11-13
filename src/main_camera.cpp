@@ -1,6 +1,6 @@
-// durchblick-azure-kinect: an Azure Kinect (or one of its recordings) as Durchblick streams (node.hpp).
+// xblick-azure-kinect: an Azure Kinect (or one of its recordings) as Durchblick streams (node.hpp).
 //
-//   durchblick-azure-kinect [--base robot/azurekinect] [--serial 000123456789 | --index 0]
+//   xblick-azure-kinect [--base robot/azurekinect] [--serial 000123456789 | --index 0]
 //                           [--params-file params.yaml ...] [--param NAME:=VALUE ...] [--dump-params FILE]
 //                           [--params-read-only]
 //                           [--fps 30] [--depth-mode NFOV_UNBINNED] [--color-resolution 720P] [--brightness 128]
@@ -11,13 +11,13 @@
 //                           [--depth-frame-id AzureKinectDepthCamera] [--color-frame-id AzureKinectCamera]
 //                           [--imu-frame-id AzureKinectImu] [--no-imu]
 //                           [--color-calibration FILE] [--depth-calibration FILE]   (also with --playback)
-//   durchblick-azure-kinect --playback recording.mkv [--loop] [--no-realtime] [--source recording]
+//   xblick-azure-kinect --playback recording.mkv [--loop] [--no-realtime] [--source recording]
 //
 // Zenoh: the PC's router (127.0.0.1:7447), or --listen/--connect ENDPOINT..., or --zenoh-config FILE
-// (durchblick::open_session). Every option is also a read-only parameter of the node /<base> (durchblick/options.hpp),
+// (xblick::open_session). Every option is also a read-only parameter of the node /<base> (xblick/options.hpp),
 // beside the device's settings below; --help lists them.
 // Parameters (settings.hpp, ROS 2's model; at run time through <base>/set_parameters etc., Durchblick's
-// durchblick/parameters.hpp and docs/parameters.md):
+// xblick/parameters.hpp and docs/parameters.md):
 // --params-file a ROS params YAML (<node>: ros__parameters: ..., the node /<base>), --param NAME:=VALUE (later wins);
 // --fps, --depth-mode, --color-resolution, --brightness and --clock-offset mean|min are short for fps, depth.mode,
 // color.resolution, color.brightness and clock.offset_estimator.
@@ -25,7 +25,7 @@
 // (calibration.hpp: CalibrationRecord::color_file).
 // The depth engine's OpenGL context is created with EGL on CUDA device --depth-engine-gpu (default: --cuda-device,
 // else 0); no X server is needed (egl_glx.cpp). --cuda-device (colour decoded with nvJPEG, CUDA rings) defaults to 0
-// in builds with DURCHBLICK_K4A_CUDA: cheaper in every case measured with k4a_node_bench (README); none: off.
+// in builds with XBLICK_K4A_CUDA: cheaper in every case measured with k4a_node_bench (README); none: off.
 // depth_to_color and depth_to_color_rect are computed on the CPU (depth_to_color.hpp); --sdk-depth-to-color: by the
 // SDK's transformation in the depth engine (OpenGL) instead, which waits for the GPU where other programs keep it busy.
 // --no-depth-to-color-interpolation: each depth pixel's footprint with its own depth throughout, not following the
@@ -48,11 +48,11 @@
 #include <string>
 #include <vector>
 
-#include "durchblick/camera.hpp"
-#include "durchblick/options.hpp"
+#include "xblick/camera.hpp"
+#include "xblick/options.hpp"
 #include "egl_glx.hpp"
 #include "node.hpp"
-#include "durchblick/parameters.hpp"
+#include "xblick/parameters.hpp"
 #include "settings.hpp"
 #include "source.hpp"
 
@@ -63,15 +63,15 @@ namespace
 
 int main(int argc, char** argv)
 {
-    using namespace durchblick;
-    using namespace durchblick::k4a_node;
+    using namespace xblick;
+    using namespace xblick::k4a_node;
     std::signal(SIGINT, [](int) { stop = true; });
     std::signal(SIGTERM, [](int) { stop = true; });
     // the device settings' short options: --fps 15 is --param fps:=15 (settings.hpp declares the parameters)
     const std::vector<std::pair<const char*, const char*>> shorts{
         {"fps", "fps"}, {"depth-mode", "depth.mode"}, {"color-resolution", "color.resolution"},
         {"brightness", "color.brightness"}, {"clock-offset", "clock.offset_estimator"}};
-    Options options("durchblick-azure-kinect", "an Azure Kinect, or one of its recordings, as Durchblick streams");
+    Options options("xblick-azure-kinect", "an Azure Kinect, or one of its recordings, as Durchblick streams");
     options.add("base", "robot/azurekinect", {.help = "the streams' base <namespace>/<camera>; the node /<base>"});
     options.add("serial", "", {.help = "the device's serial number (default: the device of --index)"});
     options.add("index", std::int64_t{0}, {.help = "the device's index, without --serial"});
@@ -80,7 +80,7 @@ int main(int argc, char** argv)
         options.add_optional(option, parameter_type::kString,
                              {.help = std::string("short for --param ") + parameter + ":=VALUE", .metavar = "VALUE"});
     }
-#ifdef DURCHBLICK_K4A_CUDA
+#ifdef XBLICK_K4A_CUDA
     options.add("cuda-device", "0", {.help = "colour decoded with nvJPEG and the CUDA rings on this GPU; none: off"});
 #else
     options.add("cuda-device", "none", {.help = "colour decoded with nvJPEG and the CUDA rings on this GPU; none: off"});
@@ -188,7 +188,7 @@ int main(int argc, char** argv)
                                                                 options.text("depth-calibration"));
 
         Node node(session, node_options, record);
-        std::cout << "durchblick-azure-kinect: " << describe(*source) << " -> " << node_options.base
+        std::cout << "xblick-azure-kinect: " << describe(*source) << " -> " << node_options.base
                   << "/{color,color_rect,depth,ir,depth_to_color,depth_to_color_rect,imu,tf_static,diagnostics}" << std::endl;
         std::cout << "ready" << std::endl;
 
@@ -224,7 +224,7 @@ int main(int argc, char** argv)
     }
     catch (const std::exception& e)
     {
-        std::cerr << "durchblick-azure-kinect: " << e.what() << std::endl;
+        std::cerr << "xblick-azure-kinect: " << e.what() << std::endl;
         return 1;
     }
     return 0;

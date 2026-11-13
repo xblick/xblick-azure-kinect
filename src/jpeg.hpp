@@ -11,7 +11,7 @@
 #include <span>
 #include <vector>
 
-namespace durchblick::k4a_node
+namespace xblick::k4a_node
 {
     // True if the JPEG has a DHT segment before its first scan.
     bool has_huffman_tables(std::span<const std::uint8_t> jpeg);
@@ -35,4 +35,4 @@ namespace durchblick::k4a_node
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };
-}  // namespace durchblick::k4a_node
+}  // namespace xblick::k4a_node

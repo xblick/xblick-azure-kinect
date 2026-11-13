@@ -9,7 +9,7 @@
 #include "calibration.hpp"
 #include "source.hpp"
 
-namespace durchblick::k4a_node
+namespace xblick::k4a_node
 {
     namespace
     {
@@ -179,7 +179,7 @@ namespace durchblick::k4a_node
                     {
                         ++changes_;
                         last_change_ = name + " " + parameter_text(v);
-                        std::cout << "durchblick-azure-kinect: parameter " << last_change_ << std::endl;
+                        std::cout << "xblick-azure-kinect: parameter " << last_change_ << std::endl;
                     }
                 }
                 return reason;
@@ -347,4 +347,4 @@ namespace durchblick::k4a_node
                 });
         }
     }
-}  // namespace durchblick::k4a_node
+}  // namespace xblick::k4a_node

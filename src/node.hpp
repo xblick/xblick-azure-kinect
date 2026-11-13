@@ -35,10 +35,10 @@
 
 #include "calibration.hpp"
 #include "clock.hpp"
-#include "durchblick/msg.hpp"
+#include "xblick/msg.hpp"
 #include "source.hpp"
 
-namespace durchblick::k4a_node
+namespace xblick::k4a_node
 {
     struct NodeOptions
     {
@@ -96,7 +96,7 @@ namespace durchblick::k4a_node
                          double seconds);
 
     // NodeOptions::cuda_device from "0", "1", ... or "none" (off). Throws for anything else, and for a device in a
-    // build without DURCHBLICK_K4A_CUDA.
+    // build without XBLICK_K4A_CUDA.
     std::optional<int> cuda_device_from_name(const std::string& name);
 
     // The calibration record of the node publishing below `base` (its <base>/k4a_calibration). Throws if no node
@@ -135,4 +135,4 @@ namespace durchblick::k4a_node
         struct Impl;
         std::unique_ptr<Impl> impl_;
     };
-}  // namespace durchblick::k4a_node
+}  // namespace xblick::k4a_node

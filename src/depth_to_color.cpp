@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace durchblick::k4a_node
+namespace xblick::k4a_node
 {
     namespace
     {
@@ -19,7 +19,7 @@ namespace durchblick::k4a_node
         constexpr float kOverlap = 0.25f;
     }  // namespace
 
-    DepthToColor::DepthToColor(const k4a_calibration_t& calibration, const durchblick::CameraInfo& color,
+    DepthToColor::DepthToColor(const k4a_calibration_t& calibration, const xblick::CameraInfo& color,
                                const RectifyMap& map, bool interpolate, bool drop_flying, bool drop_sparse)
         : interpolate_(interpolate), drop_flying_(drop_flying), drop_sparse_(drop_sparse)
     {
@@ -41,7 +41,7 @@ namespace durchblick::k4a_node
         {
             throw std::invalid_argument("depth_to_color: the calibration's colour resolution is not the CameraInfo's");
         }
-        const durchblick::CameraInfo rect = rectified_info(color);
+        const xblick::CameraInfo rect = rectified_info(color);
         fx_ = float(rect.p[0]);
         cx_ = float(rect.p[2]);
         fy_ = float(rect.p[5]);
@@ -400,4 +400,4 @@ namespace durchblick::k4a_node
             out[i] = at < 0 ? std::uint16_t(0) : canvas_[std::size_t(at)];
         }
     }
-}  // namespace durchblick::k4a_node
+}  // namespace xblick::k4a_node

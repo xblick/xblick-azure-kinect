@@ -22,7 +22,7 @@
 #include <k4a/k4a.hpp>
 
 #include "args.hpp"
-#include "durchblick/camera.hpp"
+#include "xblick/camera.hpp"
 #include "egl_glx.hpp"
 #include "depth_to_color.hpp"
 #include "node.hpp"
@@ -126,8 +126,8 @@ namespace
 
 int main(int argc, char** argv)
 {
-    using namespace durchblick;
-    using namespace durchblick::k4a_node;
+    using namespace xblick;
+    using namespace xblick::k4a_node;
     try
     {
         Args args(argc, argv);

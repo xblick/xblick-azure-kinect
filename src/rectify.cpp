@@ -6,23 +6,23 @@
 #include <stdexcept>
 #include <string>
 
-#ifdef DURCHBLICK_K4A_CUDA
+#ifdef XBLICK_K4A_CUDA
 #include <cuda_runtime_api.h>
 #include <nppi_geometry_transforms.h>
 #endif
 
-namespace durchblick::k4a_node
+namespace xblick::k4a_node
 {
-    durchblick::CameraInfo rectified_info(const durchblick::CameraInfo& raw)
+    xblick::CameraInfo rectified_info(const xblick::CameraInfo& raw)
     {
-        durchblick::CameraInfo info = durchblick::CameraInfo::pinhole(raw.width, raw.height, raw.p[0], raw.p[5],
-                                                                      raw.p[2], raw.p[6], raw.header.frame_id);
+        xblick::CameraInfo info = xblick::CameraInfo::pinhole(raw.width, raw.height, raw.p[0], raw.p[5],
+                                                              raw.p[2], raw.p[6], raw.header.frame_id);
         info.header = raw.header;
         info.p = raw.p;
         return info;
     }
 
-    RectifyMap rectify_map(const durchblick::CameraInfo& raw)
+    RectifyMap rectify_map(const xblick::CameraInfo& raw)
     {
         const bool rational = raw.distortion_model == "rational_polynomial" and raw.d.size() == 8;
         const bool plumb_bob = raw.distortion_model == "plumb_bob" and raw.d.size() == 5;
@@ -122,7 +122,7 @@ namespace durchblick::k4a_node
         }
     }
 
-#ifdef DURCHBLICK_K4A_CUDA
+#ifdef XBLICK_K4A_CUDA
     namespace
     {
         void check(cudaError_t status, const char* what)
@@ -196,4 +196,4 @@ namespace durchblick::k4a_node
         return reinterpret_cast<std::uint64_t>(m.out);
     }
 #endif
-}  // namespace durchblick::k4a_node
+}  // namespace xblick::k4a_node
