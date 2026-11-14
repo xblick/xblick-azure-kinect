@@ -1,7 +1,7 @@
 // k4a_depth_to_color_check: a running camera node's depth_to_color (the CPU's, depth_to_color.hpp) against the SDK's
 // transformation of the same depth frame, live.
 //
-//   k4a_depth_to_color_check [--base robot/azurekinect] [--seconds 10] [--depth-engine-gpu 0] [--probe-max-depth]
+//   k4a_depth_to_color_check [--base cam/azurekinect] [--seconds 10] [--depth-engine-gpu 0] [--probe-max-depth]
 //
 // Reads <base>/depth and <base>/depth_to_color from shared memory (on the camera's PC, through its Zenoh router),
 // pairs them by stamp, runs the SDK's transformation (its depth engine, in an EGL context as the node's) on the depth
@@ -131,7 +131,7 @@ int main(int argc, char** argv)
     try
     {
         Args args(argc, argv);
-        const std::string base = args.get("base", "robot/azurekinect");
+        const std::string base = args.get("base", "cam/azurekinect");
         const double seconds = std::stod(args.get("seconds", "10"));
         use_egl_for_depth_engine(std::stoi(args.get("depth-engine-gpu", "0")));
         zenoh::Session session = open_session({});

@@ -2,7 +2,7 @@
 // another way, published below another base: for looking at two ways side by side on the same frames (one camera can
 // be opened by one program only).
 //
-//   k4a_depth_to_color_mirror [--base robot/azurekinect] [--output robot/azurekinect_sdk]
+//   k4a_depth_to_color_mirror [--base cam/azurekinect] [--output cam/azurekinect_sdk]
 //                             [--variant sdk|cpu|cpu-no-interpolation|cpu-keep-flying] [--depth-engine-gpu 0]
 //
 // Reads <base>/depth from shared memory (on the camera's PC, through its Zenoh router) with the node's calibration
@@ -41,8 +41,8 @@ int main(int argc, char** argv)
     try
     {
         Args args(argc, argv);
-        const std::string base = args.get("base", "robot/azurekinect");
-        const std::string output = check_name(args.get("output", "robot/azurekinect_sdk"));
+        const std::string base = args.get("base", "cam/azurekinect");
+        const std::string output = check_name(args.get("output", "cam/azurekinect_sdk"));
         const std::string variant = args.get("variant", "sdk");
         if (variant != "sdk" and variant != "cpu" and variant != "cpu-no-interpolation" and variant != "cpu-keep-flying")
         {

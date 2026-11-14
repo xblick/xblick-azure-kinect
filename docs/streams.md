@@ -5,7 +5,7 @@ clouds. The README has the short table.
 
 ## The streams
 
-`<base>` is the base name of the node. Its default is `robot/azurekinect`.
+`<base>` is the base name of the node. Its default is `cam/azurekinect`.
 
 The node produces every representation only while a subscriber asks for it. A stream without a subscriber costs
 nothing.
@@ -70,7 +70,7 @@ The status `azure_kinect` uses the serial number of the device as `hardware_id`.
 restarts, or while the device delivers less than 90 % of its frame rate. Its level is ERROR while no captures arrive.
 [parameters.md](parameters.md#diagnostics) lists the further values.
 
-`xblick diagnostics robot --connect <camera host>` prints the diagnostics.
+`xblick diagnostics cam --connect <camera host>` prints the diagnostics.
 
 ### Bodies
 
@@ -140,10 +140,10 @@ streams like any other reader and publishes `<base>/points`.
 
 ```bash
 # on the camera's host: clouds in the depth camera's geometry
-xblick-points --depth robot/azurekinect/depth --color robot/azurekinect/color
+xblick-points --depth cam/azurekinect/depth --color cam/azurekinect/color
 # clouds in the colour camera's geometry
-xblick-points --depth robot/azurekinect/depth_to_color --color robot/azurekinect/color \
-  --output robot/azurekinect/points_color
+xblick-points --depth cam/azurekinect/depth_to_color --color cam/azurekinect/color \
+  --output cam/azurekinect/points_color
 ```
 
 | Property | Value |
@@ -177,8 +177,8 @@ point cloud node.
 
 ```bash
 xblick list --connect <camera host>
-xblick rerun robot/azurekinect/color robot/azurekinect/depth robot/azurekinect/ir \
-  robot/azurekinect/depth_to_color --points robot/azurekinect/points --spawn --connect <camera host>
+xblick rerun cam/azurekinect/color cam/azurekinect/depth cam/azurekinect/ir \
+  cam/azurekinect/depth_to_color --points cam/azurekinect/points --spawn --connect <camera host>
 ```
 
 Name the streams before `--connect`. `xblick rerun` shows the following:

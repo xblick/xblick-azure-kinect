@@ -51,10 +51,10 @@ A recording has `fps`, `depth.mode` and `color.resolution` as somebody recorded 
 | `--params-read-only` | Serve the parameters without accepting changes. Use it for a camera that others rely on. |
 | `--fps`, `--depth-mode`, `--color-resolution`, `--brightness`, `--clock-offset` | Short forms for `fps`, `depth.mode`, `color.resolution`, `color.brightness` and `clock.offset_estimator`. |
 
-In a params file the node is `/<base>`, for example `/robot/azurekinect`. The key `/**` matches any node.
+In a params file the node is `/<base>`, for example `/cam/azurekinect`. The key `/**` matches any node.
 
 ```yaml
-/robot/azurekinect:
+/cam/azurekinect:
   ros__parameters:
     fps: 30
     color:
@@ -91,10 +91,10 @@ the core's types again.
 The client works like `ros2 param`:
 
 ```bash
-xblick-azure-kinect-parameters --node robot/azurekinect --list
-xblick-azure-kinect-parameters --node robot/azurekinect --describe color.exposure_time_us
-xblick-azure-kinect-parameters --node robot/azurekinect --get
-xblick-azure-kinect-parameters --node robot/azurekinect --set color.exposure_time_us:=8000 color.gain:=10
+xblick-azure-kinect-parameters --node cam/azurekinect --list
+xblick-azure-kinect-parameters --node cam/azurekinect --describe color.exposure_time_us
+xblick-azure-kinect-parameters --node cam/azurekinect --get
+xblick-azure-kinect-parameters --node cam/azurekinect --set color.exposure_time_us:=8000 color.gain:=10
 ```
 
 Durchblick's Python command `xblick param` does the same, and so does the Parameters tab of Durchblick's

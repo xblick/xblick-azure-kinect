@@ -2,10 +2,10 @@
 // xblick/parameters.hpp), as `ros2 param`. Node-agnostic (any node serving them); Durchblick's `xblick param`
 // does the same in Python, this one for a camera PC with only the C++ part.
 //
-//   xblick-azure-kinect-parameters --node robot/azurekinect --list
-//   xblick-azure-kinect-parameters --node robot/azurekinect --describe [NAME ...]   (none: all)
-//   xblick-azure-kinect-parameters --node robot/azurekinect --get [NAME ...]        (none: all)
-//   xblick-azure-kinect-parameters --node robot/azurekinect --set NAME:=VALUE ... [--atomically]
+//   xblick-azure-kinect-parameters --node cam/azurekinect --list
+//   xblick-azure-kinect-parameters --node cam/azurekinect --describe [NAME ...]   (none: all)
+//   xblick-azure-kinect-parameters --node cam/azurekinect --get [NAME ...]        (none: all)
+//   xblick-azure-kinect-parameters --node cam/azurekinect --set NAME:=VALUE ... [--atomically]
 //
 // VALUE as a YAML scalar (true, 15625, 0.5, NFOV_UNBINNED), read for the parameter's type. Zenoh: as the camera node (--connect, --listen,
 // --zenoh-config). Exits 1 if a set fails.
@@ -51,7 +51,7 @@ int main(int argc, char** argv)
         const std::string node = args.get("node", "");
         if (node.empty())
         {
-            throw std::invalid_argument("--node <prefix>, e.g. robot/azurekinect");
+            throw std::invalid_argument("--node <prefix>, e.g. cam/azurekinect");
         }
         SessionOptions session_options{.connect = args.list("connect"), .listen = args.list("listen")};
         session_options.config_file = args.get("zenoh-config", "");

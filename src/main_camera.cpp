@@ -1,6 +1,6 @@
 // xblick-azure-kinect: an Azure Kinect (or one of its recordings) as Durchblick streams (node.hpp).
 //
-//   xblick-azure-kinect [--base robot/azurekinect] [--serial 000123456789 | --index 0]
+//   xblick-azure-kinect [--base cam/azurekinect] [--serial 000123456789 | --index 0]
 //                           [--params-file params.yaml ...] [--param NAME:=VALUE ...] [--dump-params FILE]
 //                           [--params-read-only]
 //                           [--fps 30] [--depth-mode NFOV_UNBINNED] [--color-resolution 720P] [--brightness 128]
@@ -72,7 +72,7 @@ int main(int argc, char** argv)
         {"fps", "fps"}, {"depth-mode", "depth.mode"}, {"color-resolution", "color.resolution"},
         {"brightness", "color.brightness"}, {"clock-offset", "clock.offset_estimator"}};
     Options options("xblick-azure-kinect", "an Azure Kinect, or one of its recordings, as Durchblick streams");
-    options.add("base", "robot/azurekinect", {.help = "the streams' base <namespace>/<camera>; the node /<base>"});
+    options.add("base", "cam/azurekinect", {.help = "the streams' base <namespace>/<camera>; the node /<base>"});
     options.add("serial", "", {.help = "the device's serial number (default: the device of --index)"});
     options.add("index", std::int64_t{0}, {.help = "the device's index, without --serial"});
     for (const auto& [option, parameter] : shorts)

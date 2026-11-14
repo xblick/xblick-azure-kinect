@@ -172,12 +172,12 @@ namespace
         const std::string path = "/tmp/xblick_k4a_test_params.yaml";
         {
             std::ofstream f(path);
-            f << "/robot/azurekinect:\n  ros__parameters:\n    fps: 15\n    depth:\n      mode: WFOV_2X2BINNED\n"
+            f << "/cam/azurekinect:\n  ros__parameters:\n    fps: 15\n    depth:\n      mode: WFOV_2X2BINNED\n"
                  "    color.exposure_time_us: 10000\n    color.white_balance_k: 4000\n"
                  "/other/node:\n  ros__parameters:\n    fps: 5\n";
         }
         FakeControls controls;  // before the parameters, whose writers use it
-        CameraParameters parameters(std::make_unique<Parameters>(nullptr, "azurekinect", "robot"));
+        CameraParameters parameters(std::make_unique<Parameters>(nullptr, "azurekinect", "cam"));
         parameters.parameters().configure({.params_files = {path}});
         parameters.parameters().add_override("color.white_balance_k:=4510");  // over the file's: wins
         DeviceOptions d;
@@ -203,7 +203,7 @@ namespace
               std::pair{"color.brightnes:=10", "color.brightnes"}})
         {
             FakeControls c2;
-            CameraParameters wrong(std::make_unique<Parameters>(nullptr, "azurekinect", "robot"));
+            CameraParameters wrong(std::make_unique<Parameters>(nullptr, "azurekinect", "cam"));
             wrong.parameters().add_override(assignment);
             const std::string error = error_of([&] {
                 DeviceOptions d2;
@@ -217,9 +217,9 @@ namespace
         }
         expect(not error_of([] { Parameters(nullptr, "a", "").add_override("bad"); }).empty(),
                "an assignment without := is refused");
-        expect(error_of([] { node_of("robot/azure-kinect"); }).find("ROS name") != std::string::npos,
+        expect(error_of([] { node_of("cam/azure-kinect"); }).find("ROS name") != std::string::npos,
                "a base that is no ROS name is refused");
-        expect(node_of("robot/azurekinect") == std::pair<std::string, std::string>{"robot", "azurekinect"},
+        expect(node_of("cam/azurekinect") == std::pair<std::string, std::string>{"cam", "azurekinect"},
                "the base's node: namespace and name, its services below the base");
     }
 

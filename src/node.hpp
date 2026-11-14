@@ -1,4 +1,4 @@
-// An Azure Kinect's captures as Durchblick streams below one base name (e.g. robot/azurekinect):
+// An Azure Kinect's captures as Durchblick streams below one base name (e.g. cam/azurekinect):
 //
 //   <base>/color           rgb8, the colour camera; its JPEG (the camera's MJPEG) as image_raw/compressed as it is,
 //                          decoded (CPU, or GPU into the CUDA ring with --cuda-device) only for pixel subscribers
@@ -42,7 +42,7 @@ namespace xblick::k4a_node
 {
     struct NodeOptions
     {
-        std::string base = "robot/azurekinect";
+        std::string base = "cam/azurekinect";
         std::string source = "robot";    // in every frame's attachment
         std::optional<int> cuda_device;  // decode colour with nvJPEG and offer CUDA rings on this device
         bool depth_to_color = true;      // offer <base>/depth_to_color and depth_to_color_rect

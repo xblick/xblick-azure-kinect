@@ -66,7 +66,7 @@ namespace xblick::k4a_node
     };
     const std::vector<ControlSpec>& color_controls();
 
-    // The node of a base: robot/azurekinect -> namespace robot, name azurekinect (its services below the base, as
+    // The node of a base: cam/azurekinect -> namespace cam, name azurekinect (its services below the base, as
     // <base>/set_parameters); throws unless each part is a ROS name.
     std::pair<std::string, std::string> node_of(const std::string& base);
 
