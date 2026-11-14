@@ -43,7 +43,7 @@ namespace xblick::k4a_node
     struct NodeOptions
     {
         std::string base = "cam/azurekinect";
-        std::string source = "robot";    // in every frame's attachment
+        std::string source = "cam";      // in every frame's attachment
         std::optional<int> cuda_device;  // decode colour with nvJPEG and offer CUDA rings on this device
         bool depth_to_color = true;      // offer <base>/depth_to_color and depth_to_color_rect
         // computed by the SDK's transformation (its depth engine, OpenGL) instead of on the CPU (depth_to_color.hpp)

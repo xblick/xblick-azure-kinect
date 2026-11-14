@@ -7,7 +7,7 @@
 //                           [--cuda-device 0|none] [--depth-engine-gpu 0] [--no-depth-to-color]
 //                           [--sdk-depth-to-color] [--no-depth-to-color-interpolation] [--keep-flying-pixels]
 //                           [--keep-sparse-pixels] [--max-depth-mm 0] [--sync-publish]
-//                           [--source robot]
+//                           [--source cam]
 //                           [--depth-frame-id AzureKinectDepthCamera] [--color-frame-id AzureKinectCamera]
 //                           [--imu-frame-id AzureKinectImu] [--no-imu]
 //                           [--color-calibration FILE] [--depth-calibration FILE]   (also with --playback)
@@ -96,7 +96,7 @@ int main(int argc, char** argv)
                                                   .parameter = {.unit = "mm", .integer_range = IntegerRange{0, 20000, 1}}});
     options.add_flag("sync-publish", {.help = "publish in the capture loop, one stream after the other"});
     options.add_optional("source", parameter_type::kString,
-                         {.help = "the source in the info record (default robot, with --playback recording)"});
+                         {.help = "the source in the info record (default cam, with --playback recording)"});
     options.add("depth-frame-id", "AzureKinectDepthCamera", {.help = "the depth camera's frame"});
     options.add("color-frame-id", "AzureKinectCamera", {.help = "the colour camera's frame"});
     options.add("imu-frame-id", NodeOptions{}.imu_frame_id, {.help = "the IMU's frame"});
@@ -170,7 +170,7 @@ int main(int argc, char** argv)
         }
         else
         {
-            node_options.source = options.has_value("source") ? options.text("source") : "robot";
+            node_options.source = options.has_value("source") ? options.text("source") : "cam";
             DeviceOptions d;
             d.serial = options.text("serial");
             d.index = static_cast<std::uint32_t>(options.integer("index"));
