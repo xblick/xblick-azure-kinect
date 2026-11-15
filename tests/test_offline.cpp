@@ -900,6 +900,7 @@ namespace
         std::fprintf(stderr, "%s against libjpeg: mean %.3f, largest %d\n", what.c_str(), mean / double(n), worst);
         expect(mean / double(n) < 1.0 and worst <= 8, what + " decodes like libjpeg (rounding only)");
     }
+#endif
 
     // <base>/color_rect against the SDK's own projection: a rectified pixel (u, v) shows the ray of P's camera through
     // it, which k4a_calibration_3d_to_2d puts at a point of the colour image; the rectified pixel is the colour
@@ -1008,6 +1009,7 @@ namespace
         expect(black == outside, (what + "black where the point is outside the colour image").c_str());
     }
 
+#ifdef XBLICK_K4A_CUDA
     void test_cuda_color(const CalibrationRecord& record, zenoh::Session& node_session, int port)
     {
         const std::vector<std::uint8_t> rgb = pattern_rgb(1280, 720);
