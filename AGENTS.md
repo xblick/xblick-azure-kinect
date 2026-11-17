@@ -29,7 +29,6 @@ Durations: not recorded. Give `ctest` a timeout.
 
 - Tests need no camera: `offline`, `parameters`, `ros` (needs the recording of `offline`, a ctest fixture),
   `body_tracking`. Content per test: docs/build.md. Branch ros2: the core comes from its branch ros2 at 93c618d.
-
 - `body_tracking` needs the SDK's full model `dnn_model_2_0_op11.onnx`. The lite model finds nothing.
   `-DK4ABT_TEST_PROCESSING=cpu|cuda|tensorrt`.
 - Benchmark: `tools/k4a_node_bench.cpp` (CUDA builds).
