@@ -41,7 +41,7 @@ point clouds.
 | --- | --- |
 | Linux on x86-64. The setup script is tested on Ubuntu 24.04. | everything |
 | CMake 3.24 or newer, Ninja, a C++20 compiler | the build |
-| Durchblick 0.5.5 or a later 0.5, C++ package | everything |
+| Durchblick from its branch `ros2` (commit `93c618d`, not released), C++ package | everything |
 | zenoh-c and zenoh-cpp 1.10 | everything |
 | Azure Kinect Sensor SDK 1.4 with `k4arecord` and the depth engine | everything |
 | nlohmann_json, libjpeg or libjpeg-turbo, libpng | everything |
@@ -148,6 +148,53 @@ subscriber and 1.20 ms for a subscriber that reads pixels on the GPU.
 | Body tracking uses TensorRT. | The SDK needs 7.0 ms per frame, against 16.4 ms with CUDA. |
 
 [docs/performance.md](docs/performance.md) has every measurement with its setup.
+
+## ROS 2
+
+The branch `ros2` of this repository builds on the core's branch `ros2`, which is not released. `tools/setup.sh`
+pins it at commit `93c618d`. The core adds the option `--ros` to `xblick-azure-kinect` and `xblick-k4abt`: the
+program then also takes part in ROS 2 on `rmw_zenoh` (ROS 2 Jazzy), and its own topics stay as they are. Without
+`--ros` nothing changes.
+
+```bash
+xblick-azure-kinect --ros
+xblick-k4abt --ros
+```
+
+| ROS 2 topic | ROS type | From |
+| --- | --- | --- |
+| `/<base>/<stream>/image_raw` for `color`, `color_rect`, `depth`, `ir`, `depth_to_color`, `depth_to_color_rect` | `sensor_msgs/msg/Image` | `xblick-azure-kinect` |
+| `/<base>/<stream>/camera_info` for the same streams, with the header of each image | `sensor_msgs/msg/CameraInfo` | `xblick-azure-kinect` |
+| `/<base>/color/image_raw/compressed`, `/<base>/color_rect/image_raw/compressed` | `sensor_msgs/msg/CompressedImage` (JPEG) | `xblick-azure-kinect` |
+| `/<base>/imu` | `sensor_msgs/msg/Imu` | `xblick-azure-kinect` |
+| `/tf_static`, transient local | `tf2_msgs/msg/TFMessage` | `xblick-azure-kinect` |
+| `/<base>/diagnostics` | `diagnostic_msgs/msg/DiagnosticArray` | both |
+
+ROS does not get these:
+
+- the RVL form of the depth streams (`image_raw/compressed` of `depth`, `ir` and `depth_to_color*`), which has no
+  ROS format. ROS gets their `image_raw`.
+- the rings in shared memory and on the GPU.
+- `<base>/k4a_calibration`, a JSON queryable.
+- `<base>/bodies`, JSON. `xblick-k4abt` says so in one line at its start.
+
+The node sends a topic to ROS only while a ROS subscriber reads it. `camera_info` goes out with the images: a ROS
+subscriber that reads only `camera_info` gets nothing until something takes the stream's images. The transforms on
+`/tf_static` go out once and stay in the publisher's cache for ROS subscribers that start later; such a subscriber
+may get them twice. The programs are the ROS nodes `/xblick_azure_kinect` and `/xblick_k4abt` (`--ros-node`), and their
+parameters are the ROS nodes `/<base>` and `/<base>/k4abt`. ROS clients read the parameters and may set them only
+when the program was started with `--ros-params-writable`. `xblick-azure-kinect-parameters` takes no `--ros`; it
+reads parameters on Durchblick's keys.
+
+Each part of `--base` has to be a ROS name: letters, digits and `_`, not starting with a digit. The programs check
+this at their start with or without `--ros`. Every default topic is such a name.
+
+The test `ros` plays a recording through `xblick-azure-kinect --ros` and starts `xblick-k4abt --ros` on it (with
+`--body-tracking`). It reads the topics above through Durchblick's ROS reader, checks ROS's attachment and tokens,
+and checks that without `--ros` nothing of ROS is on the wire. We also tested that an `rclcpp` node of ROS 2 Jazzy
+receives `image_raw`, `camera_info` and, starting later, `/tf_static`. Nothing was tested with a camera.
+[Durchblick and ROS 2](https://github.com/xblick/xblick/blob/ros2/docs/integrations/ros2.md) describes the option,
+the other `--ros-*` options and ROS 2's tools.
 
 ## Limits
 

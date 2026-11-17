@@ -25,6 +25,7 @@
 #include "xblick/camera.hpp"
 #include "xblick/paths.hpp"
 #include "xblick/protocol.hpp"
+#include "xblick/ros.hpp"
 #include "node.hpp"
 
 // ONNX Runtime's entry point (onnxruntime_c_api.h), from the library libk4abt runs on: the SDK's own 1.10 or a
@@ -438,6 +439,12 @@ namespace xblick::k4a_node
             m.subscribe();
         }
         m.bodies = session.declare_publisher(zenoh::KeyExpr(m.base + "/" + kBodies));
+        if (ros::of(session))
+        {
+            // --ros: the results are JSON, for which ROS has no message type (the diagnostics and the parameters go
+            // to ROS through Durchblick)
+            std::fprintf(stderr, "xblick: %s/%s: not offered to ROS (JSON has no ROS type)\n", m.base.c_str(), kBodies);
+        }
         m.diagnostics = std::make_unique<DiagnosticsPublisher>(session, m.base);
         m.reported = std::chrono::steady_clock::now();
         m.results = std::thread([&m] { m.take_results(); });

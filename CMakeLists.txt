@@ -38,6 +38,11 @@ message(STATUS "xblick_k4a: body tracking ${XBLICK_K4A_BODY_TRACKING}")
 # StaticTransformPublisher, Imu, diagnostics, CameraInfo::read_file, Options, Parameters, RVL for depth, ring keys with
 # the host; point clouds (the tests use its point cloud node xblick-points when Durchblick was built with it)
 find_package(xblick 0.5.5 REQUIRED OPTIONAL_COMPONENTS points)
+# branch ros2: Durchblick's branch ros2 (ROS 2 on rmw_zenoh, xblick/ros.hpp, not released; tools/setup.sh pins it)
+if(NOT EXISTS "${xblick_DIR}/../../../include/xblick/ros.hpp")
+  message(FATAL_ERROR "branch ros2 needs Durchblick from its branch ros2 (xblick/ros.hpp), as tools/setup.sh "
+                      "installs it; found Durchblick ${xblick_VERSION} without it")
+endif()
 find_package(k4a 1.4 REQUIRED)
 find_package(k4arecord 1.4 REQUIRED)
 find_package(nlohmann_json 3 REQUIRED)
@@ -174,6 +179,17 @@ if(BUILD_TESTING)
   add_executable(test_k4a_parameters tests/test_parameters.cpp)
   target_link_libraries(test_k4a_parameters PRIVATE xblick_k4a)
   add_test(NAME parameters COMMAND test_k4a_parameters)
+  # --ros: the programs with a recording (the one the offline test writes) as ROS 2 sees them, and nothing of ROS
+  # without --ros
+  add_executable(test_k4a_ros tests/test_ros.cpp)
+  target_link_libraries(test_k4a_ros PRIVATE xblick::xblick)
+  target_compile_definitions(test_k4a_ros PRIVATE K4A_CAMERA_PROGRAM="$<TARGET_FILE:xblick-azure-kinect>"
+                             K4A_TEST_RECORDING="${CMAKE_CURRENT_BINARY_DIR}/test_recording.mkv"
+                             K4A_TEST_TMP="${CMAKE_CURRENT_BINARY_DIR}")
+  add_dependencies(test_k4a_ros xblick-azure-kinect)
+  add_test(NAME ros COMMAND test_k4a_ros)
+  set_tests_properties(offline PROPERTIES FIXTURES_SETUP k4a_recording)
+  set_tests_properties(ros PROPERTIES FIXTURES_REQUIRED k4a_recording)
   if(XBLICK_K4A_BODY_TRACKING)
     add_executable(test_k4a_body_tracking tests/test_body_tracking.cpp)
     target_link_libraries(test_k4a_body_tracking PRIVATE xblick_k4abt)
@@ -186,6 +202,10 @@ if(BUILD_TESTING)
       message(FATAL_ERROR "XBLICK_K4A_BODY_TRACKING with tests needs K4ABT_TEST_MODEL (the SDK's .onnx model)")
     endif()
     add_test(NAME body_tracking COMMAND test_k4a_body_tracking ${K4ABT_TEST_MODEL} ${K4ABT_TEST_PROCESSING})
+    # the ros test starts xblick-k4abt on the recording as well
+    target_compile_definitions(test_k4a_ros PRIVATE K4A_BODY_TRACKING_PROGRAM="$<TARGET_FILE:xblick-k4abt>"
+                               K4A_BODY_TRACKING_MODEL="${K4ABT_TEST_MODEL}")
+    add_dependencies(test_k4a_ros xblick-k4abt)
   endif()
 endif()
 

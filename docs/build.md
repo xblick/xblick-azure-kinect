@@ -8,7 +8,7 @@ CMake options and the tests.
 | Dependency | Needed for |
 | --- | --- |
 | CMake 3.24 or newer (Durchblick needs it), Ninja, a C++20 compiler | the build |
-| Durchblick's C++ package (`find_package(xblick 0.5.5)`), version 0.5.5 or a later 0.5 | everything |
+| Durchblick's C++ package from its branch `ros2` (commit `93c618d`, not released; the build stops without its `xblick/ros.hpp`) | everything |
 | zenoh-c and zenoh-cpp 1.10 | everything |
 | Azure Kinect Sensor SDK 1.4 (`find_package(k4a)`, `k4arecord`) with the depth engine | everything |
 | nlohmann_json | everything |
@@ -45,7 +45,7 @@ The script downloads these files. It checks each one against its sha256 and stop
 | zenoh-c, standalone build | 1.10.1 | github.com/eclipse-zenoh/zenoh-c, release | EPL 2.0 or Apache 2.0 |
 | zenoh-cpp, source | 1.10.1 | github.com/eclipse-zenoh/zenoh-cpp, tag | EPL 2.0 or Apache 2.0 |
 | `zenohd`, the router | 1.10.1 | github.com/eclipse-zenoh/zenoh, release | EPL 2.0 or Apache 2.0 |
-| Durchblick, source | 0.5.12 | github.com/xblick/xblick, tag `v0.5.12` | Apache 2.0 |
+| Durchblick, source | branch `ros2`, commit `93c618d` | github.com/xblick/xblick, archive of the commit | Apache 2.0 |
 | nlohmann_json | 3.12.0 | github.com/nlohmann/json, release | MIT |
 | `cuda.h` from `nvidia-cuda-runtime` (without CUDA only) | 13.4.92 | PyPI | [NVIDIA CUDA Toolkit EULA](https://docs.nvidia.com/cuda/eula/index.html) |
 | `libk4a1.4`, `libk4a1.4-dev`: Sensor SDK with the depth engine | 1.4.1 | packages.microsoft.com, `ubuntu/18.04/prod` | [Microsoft Software License Terms, Azure Kinect Sensor SDK](https://www.nuget.org/packages/Microsoft.Azure.Kinect.Sensor/1.4.1/License) |
@@ -164,6 +164,7 @@ The tests need no camera.
 | --- | --- |
 | `offline` | The clock. The calibration, from the SDK's test calibration. The MJPEG handling. The node end to end over Zenoh. nvJPEG against libjpeg, also through the CUDA ring into another process. `depth_to_color` from the depth engine in its EGL context, against the SDK's CPU projection. `color_rect` against the SDK's projection. Durchblick's point cloud node against the SDK's projection. The playback of a recording that the SDK writes from such captures, also in a loop, with its stamps. |
 | `parameters` | The parameters, the parameter types and the clock estimators on synthetic delays. |
+| `ros` | `xblick-azure-kinect --ros` on the recording of `offline` (which ctest therefore runs first) and, with body tracking, `xblick-k4abt --ros` on its streams. The images with their `camera_info`, `/tf_static`, the IMU and the diagnostics arrive through Durchblick's ROS reader. Every ROS key carries ROS's attachment, and the tokens name the programs' nodes and their parameters' nodes. The RVL depth and the bodies do not go to ROS. Without `--ros` no key or token of ROS is on the wire. |
 | `body_tracking` | The tracker, which receives a rendered mannequin from the node's streams. The test checks the results on `<base>/bodies` and compares the joints with the SDK's own processing. |
 
 The `body_tracking` test needs the SDK's full model `dnn_model_2_0_op11.onnx`. The lite model finds nothing in the

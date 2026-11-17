@@ -2,6 +2,28 @@
 
 *The node's [overview](README.md). Versions before 0.3.0 are described in the git history only.*
 
+## Branch ros2 (not released)
+
+The programs with the core's option `--ros` (ROS 2 on `rmw_zenoh`).
+
+### Changed
+
+- `tools/setup.sh` builds the core from its unreleased branch `ros2`, pinned at commit `93c618d` (the archive of the
+  commit, with sha256), not from the tag `v0.5.12`. The build stops when the core has no `xblick/ros.hpp`.
+
+### Added
+
+- `--ros`, `--ros-domain`, `--ros-node` and `--ros-params-writable` in `xblick-azure-kinect` and `xblick-k4abt`, from
+  the core. With `--ros` the images with their `camera_info`, the JPEG colour, the IMU, `/tf_static` and the
+  diagnostics also go to ROS 2, and the parameters are ROS nodes. `xblick-k4abt` says in one line that its JSON
+  bodies are not offered to ROS. README: section "ROS 2".
+- The test `ros` (`tests/test_ros.cpp`): both programs on the `offline` test's recording, read through the core's ROS
+  reader, with ROS's attachment and tokens; without `--ros` nothing of ROS on the wire.
+
+Compatible with earlier clients: nothing on our keys changed.
+
+## Released versions
+
 * **0.3.5** `tools/setup.sh --body-tracking --untested-cuda13` on a CUDA 13 toolkit takes the builds of ONNX Runtime
   1.31.1, cuDNN 9.15.0.58 and TensorRT 10.14.1.48 for CUDA 13, pinned with sha256. Body tracking was never tried with
   them. Without the option, `--body-tracking` needs a CUDA 12 toolkit as before. Compatible with earlier clients:

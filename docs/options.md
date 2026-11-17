@@ -16,6 +16,19 @@ Each program connects to the Zenoh router of its PC at `127.0.0.1:7447` by defau
 | `--listen ENDPOINT...` | Listen on these endpoints. |
 | `--zenoh-config FILE` | Use this Zenoh configuration file. |
 
+## ROS 2, xblick-azure-kinect and xblick-k4abt
+
+The core's branch `ros2` adds these options ([README](../README.md#ros-2)).
+
+| Option | Effect |
+| --- | --- |
+| `--ros` | Also take part in ROS 2 on `rmw_zenoh`. |
+| `--ros-domain ID` | The ROS domain id. The default is `ROS_DOMAIN_ID`, else 0. |
+| `--ros-node NAME` | The program's ROS node name. The defaults are `xblick_azure_kinect` and `xblick_k4abt`. |
+| `--ros-params-writable` | ROS clients may set the parameters. Without it they only read them. |
+
+The last three need `--ros`.
+
 ## xblick-azure-kinect
 
 ### Source
