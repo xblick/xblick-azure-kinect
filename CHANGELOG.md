@@ -2,15 +2,34 @@
 
 *The node's [overview](README.md). Versions before 0.3.0 are described in the git history only.*
 
+* **0.4.0** Body tracking moved to the repository [xblick-k4abt](https://github.com/xblick/xblick-k4abt), which
+  carries the history of its files and continues as xblick-k4abt 0.4.0. This repository builds the camera node, the
+  parameter client and their tools only. The camera node's behaviour, streams, options, parameters and the
+  calibration record (version 2) are unchanged; trackers of xblick-k4abt read the streams as before. Compatible with
+  earlier clients: nothing on the wire changed.
+
+  What is gone here, and where it is now:
+
+  | What | 0.3.5 | 0.4.0 |
+  | --- | --- | --- |
+  | The program `xblick-k4abt` and its test `body_tracking` | built with `XBLICK_K4A_BODY_TRACKING` | xblick-k4abt; `-DXBLICK_K4A_BODY_TRACKING=ON` stops the configuration here |
+  | CMake options `XBLICK_K4A_ONNXRUNTIME_DIR`, `XBLICK_K4A_CUDNN_DIR`, `XBLICK_K4A_TENSORRT_DIR`, `K4ABT_TEST_MODEL`, `K4ABT_TEST_PROCESSING` | here | xblick-k4abt, same names |
+  | Target `xblick_k4a::xblick_k4abt`, header `body_tracking.hpp`, variable `xblick_k4a_BODY_TRACKING` | package `xblick_k4a` 0.3 | package `xblick_k4abt_lib` 0.4 of xblick-k4abt, target `xblick_k4abt_lib::xblick_k4abt` |
+  | `tools/setup.sh --body-tracking`, `--untested-cuda13` | here | `tools/setup.sh` of xblick-k4abt; `--body-tracking` stops with a pointer there, `--untested-cuda13` is unknown |
+
+  The CMake package `xblick_k4a` is 0.4 (`find_package(xblick_k4a 0.4)`); it has the target `xblick_k4a::xblick_k4a`
+  and the variable `xblick_k4a_CUDA`. `tools/setup.sh` no longer warns about CUDA toolkits other than 12.8: the CUDA
+  parts need a toolkit of version 12 or newer. The prerequisites of body tracking that `--body-tracking` downloaded to
+  `~/.cache/xblick/azure-kinect` are no longer used here; their `downloads/` can be moved to xblick-k4abt's cache
+  directory `~/.cache/xblick/k4abt/downloads`.
+
 * **0.3.5** `tools/setup.sh --body-tracking --untested-cuda13` on a CUDA 13 toolkit takes the builds of ONNX Runtime
-  1.31.1, cuDNN 9.15.0.58 and TensorRT 10.14.1.48 for CUDA 13, pinned with sha256. Body tracking was never tried with
-  them. Without the option, `--body-tracking` needs a CUDA 12 toolkit as before. Compatible with earlier clients:
-  nothing on the wire changed.
+  1.31.1, cuDNN 9.15.0.58 and TensorRT 10.14.1.48 for CUDA 13, pinned with sha256. Without the option,
+  `--body-tracking` needs a CUDA 12 toolkit. Compatible with earlier clients: nothing on the wire changed.
 * **0.3.4** `tools/setup.sh` accepts a CUDA toolkit of version 12 or newer for the node's CUDA parts (nvJPEG, NPP, CUDA
-  rings). A version other than the tested 12.8 gives a warning; CUDA 13 is not tested. `--body-tracking` still needs
-  CUDA 12, because the pinned ONNX Runtime, cuDNN and TensorRT are builds for it. The package check accepts multiarch
+  rings). `--body-tracking` still needs CUDA 12, because the pinned ONNX Runtime, cuDNN and TensorRT are builds for it. The package check accepts multiarch
   installs. Compatible with earlier clients: nothing on the wire changed.
-* **0.3.3** `tools/setup.sh` sets the node up from scratch on Ubuntu 24.04: it downloads the prerequisites at pinned
+* **0.3.3** `tools/setup.sh` sets the node up from scratch: it downloads the prerequisites at pinned
   versions with sha256 checksums into Durchblick's cache directory (`~/.cache/xblick/azure-kinect`), builds and tests
   the node in `build-setup/` and installs it in `install/` with `install/env.sh`. It uses no `sudo`. It prints the
   `apt` command for missing Ubuntu packages and the commands for the udev rule. Options: `--cuda`, `--no-gpu`,

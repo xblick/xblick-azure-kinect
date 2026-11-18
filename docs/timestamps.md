@@ -64,17 +64,5 @@ report the difference as "colour - depth stamp ms", which [parameters.md](parame
 
 ## Bodies
 
-Each result on `<base>/bodies` carries `stamp_ns`. It is the stamp of the depth frame that the tracker worked on.
-
-## Attachments
-
-Durchblick's publishers write the attachments of the camera streams. `xblick-k4abt` writes the attachment of the
-bodies itself, as the same object with these fields:
-
-| Field | Value |
-| --- | --- |
-| `v` | the version of the attachment |
-| `seq` | a counter with one step per sample |
-| `publish_called_ns` | the time at which the tracker has its result, before it serializes it |
-| `publish_ns` | the time right before the put |
-| `source` | the source name |
+The results of [xblick-k4abt](https://github.com/xblick/xblick-k4abt) on `<base>/bodies` carry the stamp of the depth
+frame that the tracker worked on. Its design page describes the results and their attachments.

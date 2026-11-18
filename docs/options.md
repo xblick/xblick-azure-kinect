@@ -1,10 +1,10 @@
 # Options of the programs
 
-This page lists every command-line option of `xblick-azure-kinect`, `xblick-k4abt` and
-`xblick-azure-kinect-parameters`. `xblick-azure-kinect` and `xblick-k4abt` list theirs with `--help`
-(Durchblick's `xblick::Options`); `xblick-azure-kinect-parameters` does not. The header comments of
-`src/main_camera.cpp`, `src/main_body_tracking.cpp` and `src/main_parameters.cpp` are the source of this page. Every
-program stops with an error at an unknown option.
+This page lists every command-line option of `xblick-azure-kinect` and `xblick-azure-kinect-parameters`.
+`xblick-azure-kinect` lists its options with `--help` (Durchblick's `xblick::Options`);
+`xblick-azure-kinect-parameters` does not. The header comments of `src/main_camera.cpp` and `src/main_parameters.cpp`
+are the source of this page. Every program stops with an error at an unknown option. The options of the body tracker
+are in [xblick-k4abt](https://github.com/xblick/xblick-k4abt).
 
 ## Zenoh session, all programs
 
@@ -85,32 +85,6 @@ The five short options refuse the value `auto`. Give the value, or set the `auto
 The calibration files also work with `--playback`. [streams.md](streams.md#calibration-files) states what a file
 must contain.
 
-## xblick-k4abt
-
-The tracker runs on the camera's host and reads the host rings there. On another host with a GPU it receives raw
-frames through the routers.
-
-| Option | Default | Effect |
-| --- | --- | --- |
-| `--base NAME` | `cam/azurekinect` | The base name of the camera node. |
-| `--model FILE` | `$K4A_BODY_TRACKING_DNN_MODEL_FILEPATH` | The model, for example `dnn_model_2_0_op11.onnx`. |
-| `--processing tensorrt\|cuda\|cpu` | `tensorrt` | The processing mode of the SDK. |
-| `--gpu-device N` | `0` | The GPU. |
-| `--smoothing X` | `0` | The temporal smoothing of the SDK. |
-| `--mask-min-x PX`, `--mask-max-x PX` | `-1`, off | The tracker ignores depth and IR outside these image columns. Live: it changes while the node runs. |
-| `--mask-max-z MM` | `-1`, off | The tracker ignores depth and IR beyond this distance. Live: it changes while the node runs. |
-| `--max-rate HZ` | `0`, every frame | Track at most this many frames per second. Live: it changes while the node runs. |
-| `--tensorrt-cache DIR` | `~/.cache/xblick/k4abt`, moved by `XBLICK_HOME` and `XDG_CACHE_HOME` | The directory of TensorRT's engine cache. An empty value builds the engine at every start, which takes 10 s. |
-| `--status-period SECONDS` | `5` | The period of the status line on the terminal. |
-
-`--tensorrt-cache` exists only in builds with `XBLICK_K4A_ONNXRUNTIME_DIR`, and the program accepts it only with
-`--processing tensorrt`. The masks set depth and IR outside them to 65535. A mask value of 0 or below turns that mask
-off.
-
-The program finds CUDA 12 and cuDNN 9 through its RPATH. It finds TensorRT there too in builds with
-`XBLICK_K4A_TENSORRT_DIR`. In other builds TensorRT 10 must be on `LD_LIBRARY_PATH`.
-[design.md](design.md#libraries-at-run-time) explains this.
-
 ## xblick-azure-kinect-parameters
 
 This client reads and sets the parameters of a node over its parameter services, like `ros2 param`. It works with any
@@ -129,8 +103,7 @@ The client exits with status 1 if a set fails.
 
 ## Parameters
 
-Every option is also a parameter of the node `<base>` for the camera and `<base>/k4abt` for the body tracker. The live
-ones change while the node runs: `mask_min_x`, `mask_max_x`, `mask_max_z`, `max_rate`; the tables mark them. The
-others are read-only and apply at the next start, where `--param NAME:=VALUE` or `--params-file FILE` set them. The
-camera's settings that change while it runs are its own parameters ([parameters.md](parameters.md)); its options are
-read-only. Durchblick's terminal interface (`xblick`, tab Parameters) and `xblick param` show them.
+Every option of the camera is also a read-only parameter of the node `<base>`. It applies at the next start, where
+`--param NAME:=VALUE` or `--params-file FILE` set it. The camera's settings that change while it runs are its own
+parameters ([parameters.md](parameters.md)). Durchblick's terminal interface (`xblick`, tab Parameters) and
+`xblick param` show them.

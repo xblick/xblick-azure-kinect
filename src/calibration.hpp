@@ -62,6 +62,7 @@ namespace xblick::k4a_node
     CalibrationRecord with_calibration_files(CalibrationRecord record, const std::string& color_path,
                                              const std::string& depth_path);
 
-    // 2: the calibration files (color_file, depth_file)
+    // 2: the calibration files (color_file, depth_file). xblick-k4abt reads the record with a copy of this code
+    // (its src/calibration.*): a change of the record needs the same change there.
     inline constexpr int kCalibrationRecordVersion = 2;
 }  // namespace xblick::k4a_node

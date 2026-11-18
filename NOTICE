@@ -37,10 +37,9 @@ MIT licence of that repository:
 Third-party software that this repository does not contain
 ----------------------------------------------------------
 
-The build links Microsoft's Azure Kinect Sensor SDK (libk4a, libk4arecord) and,
-for xblick-k4abt, the Azure Kinect Body Tracking SDK. The Sensor SDK's source
-code is under the MIT licence quoted above. At run time libk4a
-loads the depth engine (libdepthengine). The depth engine and the Body
-Tracking SDK are proprietary Microsoft binaries under the Microsoft Software
-License Terms that come with them. You install them separately; this
-repository contains no part of them.
+The build links Microsoft's Azure Kinect Sensor SDK (libk4a, libk4arecord). The
+Sensor SDK's source code is under the MIT licence quoted above. At run time
+libk4a loads the depth engine (libdepthengine). The depth engine is a
+proprietary Microsoft binary under the Microsoft Software License Terms that
+come with it. You install them separately; this repository contains no part of
+them.

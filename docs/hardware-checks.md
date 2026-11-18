@@ -148,7 +148,6 @@ the SDK wrote without a device. Check these with a camera:
 - the status line: captures per second, dropped captures, added Huffman tables,
 - `xblick rerun` with the camera's images,
 - the depth images from the depth engine in its EGL context, which we tested only with the transformation,
-- `xblick-k4abt` with a person in view, which we tested only with the mannequin,
 - the point cloud node with the real camera.
 
 ## Sources

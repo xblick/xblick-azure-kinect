@@ -9,27 +9,25 @@ Kinect the code handles. Read it before you simplify a part of the build or of t
 flowchart LR
   K[Azure Kinect or MKV recording] --> C[xblick-azure-kinect]
   C -- "color, depth, ir, depth_to_color, imu, ..." --> S((Durchblick streams))
-  S -- "depth, ir, k4a_calibration" --> B[xblick-k4abt]
+  S -- "depth, ir, k4a_calibration" --> B["xblick-k4abt (own repository)"]
   S -- "depth, color" --> P[xblick-points]
   B -- bodies --> S
   P -- points --> S
 ```
 
-Three decisions shape the node.
+Two decisions shape the node.
 
 **Colour stays MJPEG.** The camera sends MJPEG. The SDK's BGRA32 format only means that the SDK decodes the MJPEG on
 the CPU. The node asks the SDK for MJPEG and passes the bytes on with Durchblick's `publish_jpeg`. It decodes a frame
 only for subscribers that read pixels.
 
-**Body tracking is a separate process.** The tracker needs a capture with depth and IR of one exposure, and the
-calibration of the device. Both cross the process boundary without loss. Depth and IR travel as 16-bit frames, and the
-tracker pairs them by their common stamp. The calibration travels as the raw record, from which
-`k4a_calibration_get_from_raw` rebuilds exactly the device's `k4a_calibration_t`. Microsoft's own offline processing
-feeds the tracker in the same way, with captures from recordings. The camera node does not know about body tracking,
-so several trackers or none can run.
-
-**Body results use the SDK's body model.** They use the model `K4ABT_BODY_32` with its 32 joints, millimetres and the
-depth camera's frame.
+**Body tracking is a separate process.** It is the program `xblick-k4abt` of the repository
+[xblick-k4abt](https://github.com/xblick/xblick-k4abt). The tracker needs a capture with depth and IR of one
+exposure, and the calibration of the device. Both cross the process boundary without loss. Depth and IR travel as
+16-bit frames, and the tracker pairs them by their common stamp. The calibration travels as the raw record on
+`<base>/k4a_calibration`, from which `k4a_calibration_get_from_raw` rebuilds exactly the device's `k4a_calibration_t`.
+Microsoft's own offline processing feeds the tracker in the same way, with captures from recordings. The camera node
+does not know about body tracking, so several trackers or none can run.
 
 ## Decisions
 
@@ -39,35 +37,26 @@ installed CMake package. The table lists the decisions that a simplification cou
 | Decision | Reason | Cost |
 | --- | --- | --- |
 | The depth engine gets its OpenGL context through EGL (`libxblick_k4a_egl.so`). | The SDK needs an X display for it, and the camera's host has none. | We maintain 15 Xlib and GLX functions of our own. See "Depth engine". |
-| Body tracking uses a current ONNX Runtime through `src/onnxruntime_compat.cpp`, a stand-in for the SDK's `libonnxruntime.so.1.10.0`. TensorRT is the default mode. | With the SDK's ONNX Runtime 1.10, GPUs of compute capability 10 and newer (Blackwell) return no bodies. TensorRT takes 7.0 ms per frame, and CUDA takes 16.4 ms. | The host needs ONNX Runtime 1.31.1, TensorRT 10.14.1, cuDNN 9 and CUDA 12.8. The Body Tracking SDK still brings CUDA 11.2, which only the SDK's own runtime would use. |
 | The programs find libraries at run time through their RPATH. They do not use `LD_LIBRARY_PATH`. | See "Libraries at run time". | `CMakeLists.txt` contains linker options for it. |
 | Monitoring uses `<base>/diagnostics` with ROS's message. | Rerun and `xblick diagnostics` read the diagnostics. | A monitor of another framework has to read the topic or receive the report from the program that embeds the node. |
 | The IMU is one `sensor_msgs/Imu` per sample, only while a subscriber exists. | It is ROS's message. | A subscriber receives about 1600 small messages per second. |
 | Durchblick's generic point cloud node computes the point clouds, by default in the depth camera's geometry. The camera node computes none. | The node computes each cloud once on the GPU for every reader, and only while a reader exists. The same node serves every depth camera and uses ROS's `PointCloud2` layout. | A further process runs beside the camera. Durchblick needs `XBLICK_POINTS`, which needs a CUDA toolkit with `nvcc`. A reader on another host gets the whole cloud of 5.9 MB, or it starts its own node there. A cloud in the colour camera's geometry is available with `depth_to_color` as input. |
 | Rectified colour is a separate stream `color_rect` beside `color`. | Each reader chooses, and no reader pays for a stream that nobody reads. | The node has a second representation of the colour image. It decodes and remaps per frame while a subscriber exists. |
 | Calibration files have ROS's format, and the node puts them into the SDK's calibration. | ROS's `camera_calibration` writes them. With K and D in the SDK's calibration, `depth_to_color`, body tracking and point clouds agree with the `CameraInfo` of the streams. | A file replaces only the intrinsics, and the extrinsics stay the factory values. The calibration record has version 2, so camera nodes and trackers of the older version refuse each other. |
-| The build includes body tracking when `k4abt_DIR` is in the environment. | An environment that provides the Body Tracking SDK sets `k4abt_DIR`, and the build follows it without a CMake definition. | With `k4abt_DIR` set and without an ONNX Runtime directory, the build stops and names the unset variable `XBLICK_K4A_ONNXRUNTIME_DIR`. |
 
 ## Libraries at run time
 
-A workspace that sets `LD_LIBRARY_PATH` for all its programs puts every library there first. If CUDA 12.8's cuDNN or
-TensorRT were there, they would replace PyTorch's own libraries, for example. The programs
-therefore find the libraries that only the tracker needs through their RPATH.
+A workspace that sets `LD_LIBRARY_PATH` for all its programs puts every library there first. If the node's CUDA
+libraries were there, they would replace other programs' own, PyTorch's for example. The programs therefore find
+their libraries through their RPATH.
 
 An ELF program can name library directories in two ways. The loader searches `DT_RPATH` before `LD_LIBRARY_PATH`, and
 it searches `RUNPATH` after `LD_LIBRARY_PATH`. Modern linkers write `RUNPATH` by default.
 
 | Library | How the program finds it |
 | --- | --- |
-| The ONNX Runtime stand-in | Through `DT_RPATH`, which the option `-Wl,--disable-new-dtags` selects. The SDK's own `libonnxruntime.so.1.10.0` is usually on `LD_LIBRARY_PATH` and would win over a `RUNPATH`. |
-| ONNX Runtime 1.31.1 | Through the `RUNPATH` of the stand-in. |
-| CUDA 12.8 | Through the `DT_RPATH` of the executable. The directory is in it because the node links nvJPEG. |
-| cuDNN 9 | Through the `DT_RPATH` of the executable. `XBLICK_K4A_CUDNN_DIR` adds `<cuDNN>/lib` to it. Without that option, cuDNN has to be in the CUDA toolkit's library directory. |
-| TensorRT | Through the `DT_RPATH` of the executable. `XBLICK_K4A_TENSORRT_DIR` adds `<TensorRT>/lib` to it. |
+| The CUDA toolkit | Through the RPATH of the executable. The directory is in it because the node links nvJPEG and NPP. |
 | The depth engine | `libk4a` opens it by name. It finds it through its own `RUNPATH` `$ORIGIN/libk4a1.4`, where Microsoft's package puts it. A depth engine in another directory has to be on `LD_LIBRARY_PATH`. |
-
-ONNX Runtime's CUDA and TensorRT providers have no `RUNPATH` of their own. They find their libraries through the
-`DT_RPATH` of the executable. The exported CMake targets pass both directories on to the programs that link them.
 
 Installed programs keep these directories, because the project sets `CMAKE_INSTALL_RPATH_USE_LINK_PATH`. They find
 this project's own libraries in `../lib`. Without that setting CMake drops the directories at install.
@@ -185,46 +174,3 @@ ends the program. The node drops queued captures, so that it publishes the newes
 The node sets the brightness of the colour camera to manual 128 (`color.brightness`).
 The node also sets every other colour control at the start, to the SDK's default unless you give a value. Otherwise
 the device would keep the values of the last session. [parameters.md](parameters.md) lists the controls.
-
-### Body Tracking SDK on new GPUs
-
-The Body Tracking SDK brings CUDA 11, cuDNN 8, TensorRT 8 and ONNX Runtime 1.10. These have no kernels for new GPUs
-such as the RTX PRO 6000 with compute capability 12.0. Every inference fails there, and the SDK still returns frames,
-without bodies and without an error.
-
-The SDK uses ONNX Runtime only through its C API: `OrtGetApiBase` and two functions that append the CUDA provider and
-the TensorRT provider. `xblick-k4abt` can therefore give it a current ONNX Runtime
-(`XBLICK_K4A_ONNXRUNTIME_DIR`, for example `onnxruntime-linux-x64-gpu_cuda12-1.31.1`). That release has kernels
-for Turing, Ampere, Ada and Blackwell, which are sm_75, 86, 89 and 120.
-
-`src/onnxruntime_compat.cpp` builds a `libonnxruntime.so.1.10.0` with the symbol version that the SDK imports. It
-forwards every call to the current ONNX Runtime, with two differences:
-
-| Difference | Reason |
-| --- | --- |
-| It skips the SDK's `ReleaseEnv` at process exit. | With the CUDA provider that call corrupted the heap. |
-| It turns TF32 off. | With TF32 the joints moved by up to 35 mm against the SDK's own processing, and by up to 96 mm with TensorRT. |
-
-ONNX Runtime has no provider option for TensorRT's TF32. The library therefore sets `NVIDIA_TF32_OVERRIDE=0` when the
-SDK appends the TensorRT provider. It refuses another value of that variable.
-
-With the stand-in, every joint is within 1 mm of the SDK's own ONNX Runtime on the CPU, with CUDA and with TensorRT
-10.14.1. We measured this on the RTX PRO 6000 with a rendered mannequin (`tests/test_body_tracking.cpp`).
-[performance.md](performance.md#body-tracking) has the times.
-
-TensorRT builds its engine at the first start, which takes 10 s. It keeps the engine in the directory of
-`--tensorrt-cache`, which is the node's cache directory `~/.cache/xblick/k4abt` by default (Durchblick's
-[files page](https://github.com/xblick/xblick/blob/main/docs/reference/files.md) names the variables that move it). The cache needs 240 MB per GPU architecture. It
-has one subdirectory per ONNX Runtime and TensorRT version, for example `onnxruntime-1.31.1_tensorrt-10.14.1.48`. The
-program deletes the subdirectories of other versions at the start, because engines of another TensorRT do not load.
-
-In a build with the SDK's own ONNX Runtime, `xblick-k4abt` refuses GPUs of compute capability 10 and newer.
-
-### Masks
-
-`xblick-k4abt` sets depth and IR outside a region to 65535 before tracking, so that it tracks no bodies there.
-The options `--mask-min-x`, `--mask-max-x` and `--mask-max-z` set the region.
-
-## Status and limits
-
-- Nobody has tried CUDA mode with the SDK's own ONNX Runtime on Turing, Ampere and Ada GPUs.

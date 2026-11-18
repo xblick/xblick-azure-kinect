@@ -1,7 +1,7 @@
 #!/bin/bash
 # Sets xblick-azure-kinect up from scratch or updates it: the prerequisites, the build, the tests, the installation.
 #
-#     tools/setup.sh [--cuda | --no-gpu] [--cuda-toolkit DIR] [--body-tracking]
+#     tools/setup.sh [--cuda | --no-gpu] [--cuda-toolkit DIR]
 #
 # * Prerequisites (pinned versions, each download checked against its sha256) in the node's cache directory of
 #   Durchblick, cache_dir("azure-kinect"): $XBLICK_HOME/cache/azure-kinect, else $XDG_CACHE_HOME/xblick/azure-kinect,
@@ -10,10 +10,8 @@
 # * The build in build-setup/, the tests (ctest), the installation in install/ with install/env.sh, which puts the
 #   programs on PATH.
 # * Without an option, the CUDA parts are built when nvidia-smi lists a GPU. --cuda: always. --no-gpu: never. They
-#   need a CUDA toolkit with nvJPEG and NPP, at /usr/local/cuda or at --cuda-toolkit DIR: 12 or newer (tested: 12.8,
-#   another version gives a warning), and 12 with --body-tracking.
-# * --body-tracking adds xblick-k4abt: Microsoft's Body Tracking SDK, ONNX Runtime, cuDNN and TensorRT (11 GB of
-#   downloads). It needs the CUDA parts.
+#   need a CUDA toolkit with nvJPEG and NPP, at /usr/local/cuda or at --cuda-toolkit DIR: 12 or newer.
+# * Body tracking (xblick-k4abt) is the repository xblick-k4abt, with a setup script of its own.
 #
 # It never asks and never uses sudo. What needs root it names with the command, then stops (system packages) or goes
 # on (the udev rule for the camera). Run again, it does only what changed.
@@ -21,7 +19,7 @@ set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: tools/setup.sh [--cuda | --no-gpu] [--cuda-toolkit DIR] [--body-tracking] [--untested-cuda13]
+Usage: tools/setup.sh [--cuda | --no-gpu] [--cuda-toolkit DIR]
 
 Installs the prerequisites into the cache directory of xblick (cache/azure-kinect below $XBLICK_HOME, else
 $XDG_CACHE_HOME/xblick/azure-kinect, else ~/.cache/xblick/azure-kinect), builds the node in build-setup/, runs its
@@ -31,12 +29,10 @@ tests and installs it in install/. Afterwards: source install/env.sh.
                       nvidia-smi lists a GPU
   --no-gpu            build without CUDA (the depth engine still needs an NVIDIA GPU with EGL at run time)
   --cuda-toolkit DIR  the CUDA toolkit, 12 or newer, with nvJPEG and NPP (default /usr/local/cuda)
-  --body-tracking     also build xblick-k4abt (Body Tracking SDK 1.1.2, ONNX Runtime 1.31.1, cuDNN 9.15,
-                      TensorRT 10.14; 11 GB of downloads); needs the CUDA parts
-  --untested-cuda13   with --body-tracking and a CUDA 13 toolkit: use the builds of ONNX Runtime, cuDNN and
-                      TensorRT for CUDA 13. Body tracking was never tried with them; without this option
-                      --body-tracking needs a CUDA 12 toolkit
   -h, --help          this text
+
+Body tracking (xblick-k4abt) is the repository https://github.com/xblick/xblick-k4abt, with a setup script of its
+own.
 EOF
 }
 
@@ -47,15 +43,14 @@ die() {
 
 gpu=auto
 toolkit=/usr/local/cuda
-body_tracking=0
-untested_cuda13=0
 while (($#)); do
     case $1 in
         --cuda) [[ $gpu != off ]] || die "--cuda and --no-gpu exclude each other"; gpu=on ;;
         --no-gpu) [[ $gpu != on ]] || die "--cuda and --no-gpu exclude each other"; gpu=off ;;
         --cuda-toolkit) (($# > 1)) || die "--cuda-toolkit needs a directory"; toolkit=$2; shift ;;
-        --body-tracking) body_tracking=1 ;;
-        --untested-cuda13) untested_cuda13=1 ;;
+        --body-tracking)
+            die "--body-tracking: body tracking is the repository https://github.com/xblick/xblick-k4abt since" \
+                "xblick-azure-kinect 0.4.0, with a setup script of its own" ;;
         -h | --help) usage; exit 0 ;;
         *) usage >&2; die "unknown option: $1" ;;
     esac
@@ -70,12 +65,7 @@ zenoh_version=1.10.1
 xblick_version=0.5.12
 json_version=3.12.0
 k4a_version=1.4.1
-k4abt_version=1.1.2
 cuda_header_version=13.4.92
-ort_version=1.31.1
-cudnn_version=9.15.0.57
-cudnn13_version=9.15.0.58
-tensorrt_version=10.14.1.48
 
 # file name in downloads/ | URL | sha256
 pins=(
@@ -88,15 +78,6 @@ pins=(
     "libk4a1.4_${k4a_version}_amd64.deb|https://packages.microsoft.com/ubuntu/18.04/prod/pool/main/libk/libk4a1.4/libk4a1.4_${k4a_version}_amd64.deb|c1c63f81641eed1326136a44e5a5fd229e1e6315b2b20b2dddb5523a556c9329"
     "libk4a1.4-dev_${k4a_version}_amd64.deb|https://packages.microsoft.com/ubuntu/18.04/prod/pool/main/libk/libk4a1.4-dev/libk4a1.4-dev_${k4a_version}_amd64.deb|08303094b9ad36ea74c19bc8b8950c97055e73dd2e8bd18e2af5e165a2289cd2"
     "99-k4a.rules|https://raw.githubusercontent.com/microsoft/Azure-Kinect-Sensor-SDK/v1.4.2/scripts/99-k4a.rules|be647ffb970170364c03ab093e336ed4a37d25e6218a25c7f269ac66ca108def"
-    "libk4abt1.1_${k4abt_version}_amd64.deb|https://packages.microsoft.com/ubuntu/18.04/prod/pool/main/libk/libk4abt1.1/libk4abt1.1_${k4abt_version}_amd64.deb|0a507ffbe27b49127d53c265b9ef259d0fd993c30765fd612a1ef4054985dc50"
-    "libk4abt1.1-dev_${k4abt_version}_amd64.deb|https://packages.microsoft.com/ubuntu/18.04/prod/pool/main/libk/libk4abt1.1-dev/libk4abt1.1-dev_${k4abt_version}_amd64.deb|e04028542d35fcd7d3db2343227afc8e44f3bdc856dbe39eda0f14c31841d55b"
-    "onnxruntime-linux-x64-gpu_cuda12-$ort_version.tgz|https://github.com/microsoft/onnxruntime/releases/download/v$ort_version/onnxruntime-linux-x64-gpu_cuda12-$ort_version.tgz|57cd51f677eca19a269cdba31b0c16c15d73a8feea41f170aa8b750447ab1f70"
-    "cudnn-linux-x86_64-${cudnn_version}_cuda12-archive.tar.xz|https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-${cudnn_version}_cuda12-archive.tar.xz|183cb46b7b6d5d7c70258ce674cf795611a59a32c220d25e4f772f9f07f77e29"
-    "TensorRT-$tensorrt_version.Linux.x86_64-gnu.cuda-12.9.tar.gz|https://developer.download.nvidia.com/compute/machine-learning/tensorrt/10.14.1/tars/TensorRT-$tensorrt_version.Linux.x86_64-gnu.cuda-12.9.tar.gz|0daa7d5929c78edfbe86b474064d0f82d2064c475cc6be747c5101f1ccc37105"
-    # the builds for CUDA 13 (--untested-cuda13)
-    "onnxruntime-linux-x64-gpu_cuda13-$ort_version.tgz|https://github.com/microsoft/onnxruntime/releases/download/v$ort_version/onnxruntime-linux-x64-gpu_cuda13-$ort_version.tgz|b2146862e691f7e338f5aff9c7a9a5567c2ca57cf01442a1adb3a13bf62d9095"
-    "cudnn-linux-x86_64-${cudnn13_version}_cuda13-archive.tar.xz|https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-${cudnn13_version}_cuda13-archive.tar.xz|6ddfeaa00ba534c7917f15666d7fc1e8f05f822a7681eb9adbe4b86beaebe8bc"
-    "TensorRT-$tensorrt_version.Linux.x86_64-gnu.cuda-13.0.tar.gz|https://developer.download.nvidia.com/compute/machine-learning/tensorrt/10.14.1/tars/TensorRT-$tensorrt_version.Linux.x86_64-gnu.cuda-13.0.tar.gz|c74af67db57f1a0d7e66bb01ab93f1ecda5facac491ca76e680d832f1e035ce6"
 )
 
 # ------------------------------------------------------------------------------------------------- the system
@@ -113,14 +94,11 @@ if [[ $gpu == auto ]]; then
         echo "nvidia-smi lists no GPU: building without CUDA (--cuda builds the CUDA parts)"
     fi
 fi
-((!body_tracking)) || [[ $gpu == on ]] || die "--body-tracking needs the CUDA parts: leave out --no-gpu"
-((!untested_cuda13)) || ((body_tracking)) || die "--untested-cuda13 only has a meaning with --body-tracking"
 
 # the Ubuntu packages: the build tools, libjpeg, libpng, EGL; the depth engine needs libGL and libX11 at run time,
-# libk4a libudev, the Body Tracking SDK libgomp
+# libk4a libudev
 packages=(cmake ninja-build g++ curl unzip xz-utils libjpeg-turbo8-dev libpng-dev libegl-dev libgl-dev libgl1
           libx11-6 libudev1)
-((!body_tracking)) || packages+=(libgomp1)
 missing=()
 for package in "${packages[@]}"; do
     # one line per architecture: with multiarch (i386 next to amd64) a package is listed twice
@@ -143,28 +121,9 @@ if [[ $gpu == on ]]; then
     ((toolkit_major >= 12)) ||
         die "the CUDA toolkit at $toolkit is $toolkit_version, the node needs 12 or newer:" \
             "sudo apt install cuda-toolkit-12-8, or --cuda-toolkit DIR, or --no-gpu"
-    needed=(include/nvjpeg.h lib64/libnvjpeg.so lib64/libnppig.so)
-    if [[ $body_tracking == 1 ]]; then
-        # the pinned ONNX Runtime, cuDNN and TensorRT are builds for one CUDA major version and load its libraries
-        # by name: the set for CUDA 12 is the tested one, the set for CUDA 13 was never tried with body tracking
-        if ((toolkit_major == 13 && untested_cuda13)); then
-            echo "setup.sh: WARNING: body tracking with the CUDA 13 builds of ONNX Runtime, cuDNN and TensorRT" \
-                "was never tried (--untested-cuda13); going on" >&2
-        elif ((toolkit_major == 13)); then
-            die "the CUDA toolkit at $toolkit is $toolkit_version, and --body-tracking is tested with CUDA 12 only:" \
-                "--untested-cuda13 takes the builds for CUDA 13 (never tried), or --cuda-toolkit DIR of a CUDA 12" \
-                "toolkit, or setup without --body-tracking"
-        elif ((toolkit_major != 12)); then
-            die "the CUDA toolkit at $toolkit is $toolkit_version, but --body-tracking needs CUDA 12 or 13 (ONNX" \
-                "Runtime, cuDNN and TensorRT are pinned as builds for these): --cuda-toolkit DIR"
-        fi
-        needed+=("lib64/libcublas.so.$toolkit_major")
-    fi
-    for file in "${needed[@]}"; do
+    for file in include/nvjpeg.h lib64/libnvjpeg.so lib64/libnppig.so; do
         [[ -e $toolkit/$file ]] || die "the CUDA toolkit at $toolkit has no $file (nvJPEG and NPP are needed)"
     done
-    [[ $toolkit_version == 12.8* ]] ||
-        echo "setup.sh: WARNING: CUDA $toolkit_version is not tested with this node (tested: 12.8); going on" >&2
 fi
 
 # ------------------------------------------------------------------------------------------------- the cache
@@ -218,15 +177,8 @@ mark_finished() { touch "$1/.setup-done"; }
 notice_k4a="Microsoft's Azure Kinect Sensor SDK $k4a_version binaries (libk4a, libk4arecord, the depth engine) are\
  under the Microsoft Software License Terms of the Azure Kinect Sensor SDK:\
  https://www.nuget.org/packages/Microsoft.Azure.Kinect.Sensor/$k4a_version/License"
-notice_k4abt="Microsoft's Azure Kinect Body Tracking SDK $k4abt_version (with its models) is under the Microsoft\
- Software License Terms of the Azure Kinect Body Tracking SDK:\
- https://www.nuget.org/packages/Microsoft.Azure.Kinect.BodyTracking/$k4abt_version/License"
 notice_cuda_header="NVIDIA's CUDA runtime package $cuda_header_version (for its header cuda.h) is under the NVIDIA CUDA\
  Toolkit End User License Agreement: https://docs.nvidia.com/cuda/eula/index.html"
-notice_cudnn="NVIDIA cuDNN $cudnn_version is under the NVIDIA Software License Agreement for cuDNN:\
- https://docs.nvidia.com/deeplearning/cudnn/latest/reference/eula.html"
-notice_tensorrt="NVIDIA TensorRT $tensorrt_version is under the NVIDIA TensorRT Software License Agreement:\
- https://docs.nvidia.com/deeplearning/tensorrt/latest/reference/sla.html"
 
 # ------------------------------------------------------------------------------------------------- Zenoh
 
@@ -321,66 +273,14 @@ if ! grep -qs '045e.*097c' /etc/udev/rules.d/*.rules /lib/udev/rules.d/*.rules; 
     echo "  sudo cp $k4a/99-k4a.rules /etc/udev/rules.d/ && sudo udevadm control --reload-rules && sudo udevadm trigger"
 fi
 
-# ------------------------------------------------------------------------------------------------- body tracking
-
-node_options=(-DXBLICK_K4A_BODY_TRACKING=OFF)
-if ((body_tracking)); then
-    k4abt=$cache/k4abt-$k4abt_version
-    if ! finished "$k4abt"; then
-        fetch "libk4abt1.1_${k4abt_version}_amd64.deb" "$notice_k4abt"
-        fetch "libk4abt1.1-dev_${k4abt_version}_amd64.deb"
-        echo "unpacking the Azure Kinect Body Tracking SDK $k4abt_version (3.3 GB)"
-        mkdir -p "$k4abt"
-        dpkg-deb -x "$downloads/libk4abt1.1_${k4abt_version}_amd64.deb" "$k4abt"
-        dpkg-deb -x "$downloads/libk4abt1.1-dev_${k4abt_version}_amd64.deb" "$k4abt"
-        mark_finished "$k4abt"
-    fi
-    # the set of builds for the toolkit's CUDA major version (12: tested; 13: --untested-cuda13)
-    if ((toolkit_major == 13)); then
-        cudnn_set_version=$cudnn13_version tensorrt_cuda=13.0 tensorrt_root=$cache/cuda13
-    else
-        cudnn_set_version=$cudnn_version tensorrt_cuda=12.9 tensorrt_root=$cache
-    fi
-    ort_name=onnxruntime-linux-x64-gpu_cuda$toolkit_major-$ort_version
-    cudnn_name=cudnn-linux-x86_64-${cudnn_set_version}_cuda$toolkit_major-archive
-    tensorrt_name=TensorRT-$tensorrt_version.Linux.x86_64-gnu.cuda-$tensorrt_cuda
-    ort=$cache/$ort_name
-    if ! finished "$ort"; then
-        fetch "$ort_name.tgz"
-        echo "unpacking ONNX Runtime $ort_version"
-        tar -xzf "$downloads/$ort_name.tgz" -C "$cache"
-        mark_finished "$ort"
-    fi
-    cudnn=$cache/$cudnn_name
-    if ! finished "$cudnn"; then
-        fetch "$cudnn_name.tar.xz" "$notice_cudnn"
-        echo "unpacking cuDNN $cudnn_set_version"
-        tar -xJf "$downloads/$cudnn_name.tar.xz" -C "$cache" --exclude='*_static*.a'
-        mark_finished "$cudnn"
-    fi
-    tensorrt=$tensorrt_root/TensorRT-$tensorrt_version
-    if ! finished "$tensorrt"; then
-        fetch "$tensorrt_name.tar.gz" "$notice_tensorrt"
-        echo "unpacking TensorRT $tensorrt_version (its libraries)"
-        mkdir -p "$tensorrt_root"
-        tar -xzf "$downloads/$tensorrt_name.tar.gz" -C "$tensorrt_root" \
-            --exclude='*.a' --exclude='*_win_*' "TensorRT-$tensorrt_version/lib" "TensorRT-$tensorrt_version/doc"
-        mark_finished "$tensorrt"
-    fi
-    node_options=(-DXBLICK_K4A_BODY_TRACKING=ON -Dk4abt_DIR="$k4abt/usr/lib/cmake/k4abt"
-                  -DXBLICK_K4A_ONNXRUNTIME_DIR="$ort" -DXBLICK_K4A_CUDNN_DIR="$cudnn"
-                  -DXBLICK_K4A_TENSORRT_DIR="$tensorrt"
-                  -DK4ABT_TEST_MODEL="$k4abt/usr/bin/dnn_model_2_0_op11.onnx" -DK4ABT_TEST_PROCESSING=tensorrt)
-fi
-
 # ------------------------------------------------------------------------------------------------- the node
 
 build=$repo/build-setup
 install=$repo/install
 if [[ $gpu == on ]]; then
-    node_options+=(-DXBLICK_K4A_CUDA=ON -DCUDAToolkit_ROOT="$toolkit")
+    node_options=(-DXBLICK_K4A_CUDA=ON -DCUDAToolkit_ROOT="$toolkit")
 else
-    node_options+=(-DXBLICK_K4A_CUDA=OFF)
+    node_options=(-DXBLICK_K4A_CUDA=OFF)
 fi
 # every package by its directory: a directory cached by an earlier call with other options would win over the
 # prefix path
@@ -409,19 +309,13 @@ if [[ ! -f $build/.setup-tests-passed ]]; then
 fi
 cmake --install "$build" > /dev/null
 
-# install/env.sh: the programs of the node, of Durchblick's C++ package and zenohd on PATH; the tracker's model
+# install/env.sh: the programs of the node, of Durchblick's C++ package and zenohd on PATH
 {
     echo "# Written by tools/setup.sh: puts xblick-azure-kinect's programs on PATH. Use: source install/env.sh"
     echo "export PATH=\"$install/bin:$xblick/bin:$zenoh/bin\${PATH:+:\$PATH}\""
-    if ((body_tracking)); then
-        echo "export K4A_BODY_TRACKING_DNN_MODEL_FILEPATH=\"$k4abt/usr/bin/dnn_model_2_0_op11.onnx\""
-    fi
 } > "$install/env.sh"
 
 echo "xblick-azure-kinect: set up and tested. To start it:"
 echo "  source $install/env.sh"
 echo "  zenohd --no-multicast-scouting -l tcp/0.0.0.0:7447 &   # once per PC, unless a router runs already"
 echo "  xblick-azure-kinect"
-if ((body_tracking)); then
-    echo "  xblick-k4abt"
-fi

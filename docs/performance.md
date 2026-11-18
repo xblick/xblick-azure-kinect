@@ -1,7 +1,7 @@
 # Performance of xblick-azure-kinect
 
 This page has every measurement of the node with its setup: the cost per colour frame, the cost per capture with
-subscribers, the camera on a busy GPU, and the body tracking. The README has the short table.
+subscribers and the camera on a busy GPU. The README has the short table.
 
 ## Cost per colour frame
 
@@ -86,27 +86,9 @@ Observed on 2026-11-10 on a camera PC where Durchblick's nodes share the GPU und
 
 [design.md](design.md) describes both mechanisms.
 
-## Body tracking
-
-Measured on an RTX PRO 6000 with a rendered mannequin (`tests/test_body_tracking.cpp`).
-
-| Mode | Time per frame in the SDK | Of it the network | Capture to published result | Start |
-| --- | --- | --- | --- | --- |
-| TensorRT 10.14.1 | 7.0 ms | 3.3 ms | 9 to 12 ms | 10 s at the first start, then 1.6 s |
-| CUDA | 16.4 ms | 9.2 ms | 14 to 17 ms | 1.4 s |
-| CPU | 123 ms | 98 ms | not measured | not measured |
-
-The time per frame in the SDK runs from enqueue to result and is the median of 190 frames. The time from capture to
-the published result is the median of 20 results at 30 frames per second.
-
-The tracker takes results in a separate thread. An earlier version took each result between two frames, so each
-result waited for the next frame. That took 33 ms in both modes.
-
-With CUDA and with TensorRT, every joint is within 1 mm of the SDK's own ONNX Runtime on the CPU.
-
 ## Status and limits
 
-- All measurements use recordings, synthetic JPEG frames or a rendered mannequin. Only the section "The camera on a
-  busy GPU" comes from a real device.
+- All measurements use recordings or synthetic JPEG frames. Only the section "The camera on a busy GPU" comes from a
+  real device.
 - The table "Cost per capture with subscribers" predates the CPU `depth_to_color` and the publishing threads. Nobody
   has repeated it since.

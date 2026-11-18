@@ -63,7 +63,7 @@ and `--imu-frame-id` changes it. The message contains no orientation. `--no-imu`
 | Status | Publisher | Content |
 | --- | --- | --- |
 | `azure_kinect` | the camera node | Captures per second, drops, restarts, rate and time per stream, IMU rate, temperature, firmware. |
-| `body_tracking` | `xblick-k4abt` | Rates, latency, unpaired frames, busy frames, rate-limited frames, settings. |
+| `body_tracking` | `xblick-k4abt` ([xblick-k4abt](https://github.com/xblick/xblick-k4abt)) | Rates, latency, unpaired frames, busy frames, rate-limited frames, settings. |
 | `point_cloud` | Durchblick's point cloud node | The status of that node. |
 
 The status `azure_kinect` uses the serial number of the device as `hardware_id`. Its level is WARN after drops, after
@@ -74,9 +74,9 @@ restarts, or while the device delivers less than 90 % of its frame rate. Its lev
 
 ### Bodies
 
-`xblick-k4abt` publishes its results as JSON on `<base>/bodies`. The results use the
-model `K4ABT_BODY_32` with its 32 joints, millimetres, and the depth camera's frame. Each result
-carries `stamp_ns`, the stamp of the depth frame that the tracker worked on.
+`xblick-k4abt` of the repository [xblick-k4abt](https://github.com/xblick/xblick-k4abt) publishes its results
+as JSON on `<base>/bodies`. The results use the model `K4ABT_BODY_32` with its 32 joints, millimetres, and the depth
+camera's frame. Each result carries `stamp_ns`, the stamp of the depth frame that the tracker worked on.
 
 ## CameraInfo
 
