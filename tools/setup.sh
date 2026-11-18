@@ -62,7 +62,7 @@ repo=$(cd "$(dirname "$0")/.." && pwd)
 # ------------------------------------------------------------------------------------------------- pinned versions
 
 zenoh_version=1.10.1
-xblick_version=0.5.12
+xblick_version=0.5.14
 json_version=3.12.0
 k4a_version=1.4.1
 cuda_header_version=13.4.92
@@ -72,7 +72,7 @@ pins=(
     "zenoh-c-$zenoh_version-x86_64-unknown-linux-gnu-standalone.zip|https://github.com/eclipse-zenoh/zenoh-c/releases/download/$zenoh_version/zenoh-c-$zenoh_version-x86_64-unknown-linux-gnu-standalone.zip|9ee0f2d732b0f3042a7e1cd3076042a2bc3ac0415587c40bc3ed7b8b62fbde11"
     "zenoh-cpp-$zenoh_version.tar.gz|https://github.com/eclipse-zenoh/zenoh-cpp/archive/refs/tags/$zenoh_version.tar.gz|64d3c315c4fdfa54b4d96ee27ee2b3d98320b0fb289402fff9d7a99bc513528e"
     "zenoh-$zenoh_version-x86_64-unknown-linux-gnu-standalone.zip|https://github.com/eclipse-zenoh/zenoh/releases/download/$zenoh_version/zenoh-$zenoh_version-x86_64-unknown-linux-gnu-standalone.zip|512ac81438fd995ca2db02f75dd83afa048b6a11630ee10e0cb4dc423c39a5e9"
-    "xblick-$xblick_version.tar.gz|https://github.com/xblick/xblick/archive/refs/tags/v$xblick_version.tar.gz|d54a3c5e7e069f9edd7611929a7a1c3ec6acd7d4d4c74185e5969ef5fc949736"
+    "xblick-$xblick_version.tar.gz|https://github.com/xblick/xblick/archive/refs/tags/v$xblick_version.tar.gz|176652b48c71501fb1bd1e965b4d0dbf3b7331545f46b8cfb6d46311e447c186"
     "nlohmann-json-$json_version.tar.xz|https://github.com/nlohmann/json/releases/download/v$json_version/json.tar.xz|42f6e95cad6ec532fd372391373363b62a14af6d771056dbfc86160e6dfff7aa"
     "nvidia_cuda_runtime-$cuda_header_version-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl|https://files.pythonhosted.org/packages/98/8a/3431271f6344874b8f1ac03f16b3d679c91493f8da63f716160403e6d0a0/nvidia_cuda_runtime-$cuda_header_version-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl|9641f797da20ce1dd8e779b6e96d08cf9ba564cec8e8225458811ee26423f3a5"
     "libk4a1.4_${k4a_version}_amd64.deb|https://packages.microsoft.com/ubuntu/18.04/prod/pool/main/libk/libk4a1.4/libk4a1.4_${k4a_version}_amd64.deb|c1c63f81641eed1326136a44e5a5fd229e1e6315b2b20b2dddb5523a556c9329"

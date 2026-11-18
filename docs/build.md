@@ -40,7 +40,7 @@ The script downloads these files. It checks each one against its sha256 and stop
 | zenoh-c, standalone build | 1.10.1 | github.com/eclipse-zenoh/zenoh-c, release | EPL 2.0 or Apache 2.0 |
 | zenoh-cpp, source | 1.10.1 | github.com/eclipse-zenoh/zenoh-cpp, tag | EPL 2.0 or Apache 2.0 |
 | `zenohd`, the router | 1.10.1 | github.com/eclipse-zenoh/zenoh, release | EPL 2.0 or Apache 2.0 |
-| Durchblick, source | 0.5.12 | github.com/xblick/xblick, tag `v0.5.12` | Apache 2.0 |
+| Durchblick, source | 0.5.14 | github.com/xblick/xblick, tag `v0.5.14` | Apache 2.0 |
 | nlohmann_json | 3.12.0 | github.com/nlohmann/json, release | MIT |
 | `cuda.h` from `nvidia-cuda-runtime` (without CUDA only) | 13.4.92 | PyPI | [NVIDIA CUDA Toolkit EULA](https://docs.nvidia.com/cuda/eula/index.html) |
 | `libk4a1.4`, `libk4a1.4-dev`: Sensor SDK with the depth engine | 1.4.1 | packages.microsoft.com, `ubuntu/18.04/prod` | [Microsoft Software License Terms, Azure Kinect Sensor SDK](https://www.nuget.org/packages/Microsoft.Azure.Kinect.Sensor/1.4.1/License) |

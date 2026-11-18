@@ -14,14 +14,16 @@
   | --- | --- | --- |
   | The program `xblick-k4abt` and its test `body_tracking` | built with `XBLICK_K4A_BODY_TRACKING` | xblick-k4abt; `-DXBLICK_K4A_BODY_TRACKING=ON` stops the configuration here |
   | CMake options `XBLICK_K4A_ONNXRUNTIME_DIR`, `XBLICK_K4A_CUDNN_DIR`, `XBLICK_K4A_TENSORRT_DIR`, `K4ABT_TEST_MODEL`, `K4ABT_TEST_PROCESSING` | here | xblick-k4abt, same names |
-  | Target `xblick_k4a::xblick_k4abt`, header `body_tracking.hpp`, variable `xblick_k4a_BODY_TRACKING` | package `xblick_k4a` 0.3 | package `xblick_k4abt_lib` 0.4 of xblick-k4abt, target `xblick_k4abt_lib::xblick_k4abt` |
+  | Target `xblick_k4a::xblick_k4abt`, header `body_tracking.hpp`, variable `xblick_k4a_BODY_TRACKING` | package `xblick_k4a` 0.3 | package `xblick_k4abt` 0.4 of xblick-k4abt, target `xblick_k4abt::xblick_k4abt` |
   | `tools/setup.sh --body-tracking`, `--untested-cuda13` | here | `tools/setup.sh` of xblick-k4abt; `--body-tracking` stops with a pointer there, `--untested-cuda13` is unknown |
 
   The CMake package `xblick_k4a` is 0.4 (`find_package(xblick_k4a 0.4)`); it has the target `xblick_k4a::xblick_k4a`
   and the variable `xblick_k4a_CUDA`. `tools/setup.sh` no longer warns about CUDA toolkits other than 12.8: the CUDA
-  parts need a toolkit of version 12 or newer. The prerequisites of body tracking that `--body-tracking` downloaded to
-  `~/.cache/xblick/azure-kinect` are no longer used here; their `downloads/` can be moved to xblick-k4abt's cache
-  directory `~/.cache/xblick/k4abt/downloads`.
+  parts need a toolkit of version 12 or newer. Migration: body tracking is now a second clone,
+  [xblick-k4abt](https://github.com/xblick/xblick-k4abt), with its own `tools/setup.sh`; its prerequisites live in
+  `~/.cache/xblick/k4abt`. The files that `--body-tracking` downloaded to `~/.cache/xblick/azure-kinect/downloads`
+  have the names that script expects and need not be downloaded again: its README (section "Moving from
+  xblick-azure-kinect 0.3") has the commands that move them.
 
 * **0.3.5** `tools/setup.sh --body-tracking --untested-cuda13` on a CUDA 13 toolkit takes the builds of ONNX Runtime
   1.31.1, cuDNN 9.15.0.58 and TensorRT 10.14.1.48 for CUDA 13, pinned with sha256. Without the option,
