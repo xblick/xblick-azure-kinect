@@ -26,6 +26,9 @@
 // The depth engine's OpenGL context is created with EGL on CUDA device --depth-engine-gpu (default: --cuda-device,
 // else 0); no X server is needed (egl_glx.cpp). --cuda-device (colour decoded with nvJPEG, CUDA rings) defaults to 0
 // in builds with XBLICK_K4A_CUDA: cheaper in every case measured with k4a_node_bench (README); none: off.
+// At the start, before the session: with --cuda-device N the NVIDIA driver and GPU N are checked (check_cuda_device,
+// nvjpeg_decoder.hpp), and the wheel's program loads the depth engine from the node's cache directory (wheel.hpp); a
+// missing part stops the program with one line that names it.
 // depth_to_color and depth_to_color_rect are computed on the CPU (depth_to_color.hpp); --sdk-depth-to-color: by the
 // SDK's transformation in the depth engine (OpenGL) instead, which waits for the GPU where other programs keep it busy.
 // --no-depth-to-color-interpolation: each depth pixel's footprint with its own depth throughout, not following the
@@ -52,6 +55,12 @@
 #include "xblick/options.hpp"
 #include "egl_glx.hpp"
 #include "node.hpp"
+#ifdef XBLICK_K4A_CUDA
+#include "nvjpeg_decoder.hpp"
+#endif
+#ifdef XBLICK_K4A_WHEEL
+#include "wheel.hpp"
+#endif
 #include "xblick/parameters.hpp"
 #include "settings.hpp"
 #include "source.hpp"
@@ -63,6 +72,9 @@ namespace
 
 int main(int argc, char** argv)
 {
+#ifdef XBLICK_K4A_WHEEL
+    xblick::k4a_node::preload_depth_engine();  // before anything can end the program (wheel.hpp)
+#endif
     using namespace xblick;
     using namespace xblick::k4a_node;
     std::signal(SIGINT, [](int) { stop = true; });
@@ -115,6 +127,25 @@ int main(int argc, char** argv)
     options.parse(argc, argv);
     try
     {
+        // what the start needs, before the session: a missing part stops the node with one line naming it
+        const std::optional<int> cuda_device = cuda_device_from_name(options.text("cuda-device"));
+#ifdef XBLICK_K4A_CUDA
+        if (cuda_device)
+        {
+            try
+            {
+                check_cuda_device(*cuda_device);
+            }
+            catch (const std::exception& e)
+            {
+                throw std::runtime_error("--cuda-device " + std::to_string(*cuda_device) + ": " + e.what() +
+                                         "; pass --cuda-device none to decode the colour on the CPU");
+            }
+        }
+#endif
+#ifdef XBLICK_K4A_WHEEL
+        require_depth_engine();
+#endif
         // the parameters' services need the session: it opens before they are declared
         std::unique_ptr<CaptureSource> source;  // before the parameters: their writers use its colour controls
         zenoh::Session session = open_session(options.session_options());
@@ -151,7 +182,7 @@ int main(int argc, char** argv)
         node_options.depth_to_color_drop_sparse = not options.flag("keep-sparse-pixels");
         node_options.max_depth_mm = static_cast<std::uint32_t>(options.integer("max-depth-mm"));
         node_options.imu_frame_id = options.text("imu-frame-id");
-        node_options.cuda_device = cuda_device_from_name(options.text("cuda-device"));
+        node_options.cuda_device = cuda_device;
         const double status_period = options.number("status-period");
         use_egl_for_depth_engine(options.has_value("depth-engine-gpu")
                                      ? static_cast<int>(options.integer("depth-engine-gpu"))

@@ -2,3 +2,5 @@ build/
 build-azure-kinect/
 build-setup/
 install/
+dist/
+__pycache__/

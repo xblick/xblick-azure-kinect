@@ -6,11 +6,6 @@
 #include <stdexcept>
 #include <string>
 
-#ifdef XBLICK_K4A_CUDA
-#include <cuda_runtime_api.h>
-#include <nppi_geometry_transforms.h>
-#endif
-
 namespace xblick::k4a_node
 {
     xblick::CameraInfo rectified_info(const xblick::CameraInfo& raw)
@@ -121,79 +116,4 @@ namespace xblick::k4a_node
             }
         }
     }
-
-#ifdef XBLICK_K4A_CUDA
-    namespace
-    {
-        void check(cudaError_t status, const char* what)
-        {
-            if (status != cudaSuccess)
-            {
-                throw std::runtime_error(std::string("rectification: ") + what + ": " + cudaGetErrorString(status));
-            }
-        }
-    }  // namespace
-
-    struct GpuRectifier::Impl
-    {
-        int device = 0;
-        std::uint32_t width = 0, height = 0;
-        float* x = nullptr;
-        float* y = nullptr;
-        std::uint8_t* out = nullptr;
-        NppStreamContext context{};
-    };
-
-    GpuRectifier::GpuRectifier(int device, const RectifyMap& map) : impl_(std::make_unique<Impl>())
-    {
-        Impl& m = *impl_;
-        m.device = device;
-        m.width = map.width;
-        m.height = map.height;
-        check(cudaSetDevice(device), "cudaSetDevice");
-        const std::size_t n = map.x.size();
-        check(cudaMalloc(reinterpret_cast<void**>(&m.x), n * sizeof(float)), "cudaMalloc");
-        check(cudaMalloc(reinterpret_cast<void**>(&m.y), n * sizeof(float)), "cudaMalloc");
-        check(cudaMalloc(reinterpret_cast<void**>(&m.out), n * 3), "cudaMalloc");
-        check(cudaMemcpy(m.x, map.x.data(), n * sizeof(float), cudaMemcpyHostToDevice), "cudaMemcpy");
-        check(cudaMemcpy(m.y, map.y.data(), n * sizeof(float), cudaMemcpyHostToDevice), "cudaMemcpy");
-        // NPP leaves pixels whose point is outside the image unwritten: they stay this black
-        check(cudaMemset(m.out, 0, n * 3), "cudaMemset");
-        cudaDeviceProp properties{};
-        check(cudaGetDeviceProperties(&properties, device), "cudaGetDeviceProperties");
-        m.context.nCudaDeviceId = device;
-        m.context.nMultiProcessorCount = properties.multiProcessorCount;
-        m.context.nMaxThreadsPerMultiProcessor = properties.maxThreadsPerMultiProcessor;
-        m.context.nMaxThreadsPerBlock = properties.maxThreadsPerBlock;
-        m.context.nSharedMemPerBlock = properties.sharedMemPerBlock;
-        m.context.nCudaDevAttrComputeCapabilityMajor = properties.major;
-        m.context.nCudaDevAttrComputeCapabilityMinor = properties.minor;
-    }
-
-    GpuRectifier::~GpuRectifier()
-    {
-        cudaFree(impl_->x);
-        cudaFree(impl_->y);
-        cudaFree(impl_->out);
-    }
-
-    std::uint64_t GpuRectifier::rectify(std::uint64_t src, std::uint64_t stream)
-    {
-        Impl& m = *impl_;
-        check(cudaSetDevice(m.device), "cudaSetDevice");
-        NppStreamContext context = m.context;
-        context.hStream = reinterpret_cast<cudaStream_t>(stream);
-        check(cudaStreamGetFlags(context.hStream, &context.nStreamFlags), "cudaStreamGetFlags");
-        const int w = int(m.width), h = int(m.height);
-        const NppStatus status = nppiRemap_8u_C3R_Ctx(
-            reinterpret_cast<const Npp8u*>(src), NppiSize{w, h}, w * 3, NppiRect{0, 0, w, h}, m.x,
-            w * int(sizeof(float)), m.y, w * int(sizeof(float)), m.out, w * 3, NppiSize{w, h}, NPPI_INTER_LINEAR,
-            context);
-        if (status != NPP_SUCCESS)
-        {
-            throw std::runtime_error("rectification: nppiRemap_8u_C3R_Ctx: NPP status " + std::to_string(int(status)));
-        }
-        return reinterpret_cast<std::uint64_t>(m.out);
-    }
-#endif
 }  // namespace xblick::k4a_node

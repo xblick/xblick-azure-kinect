@@ -482,8 +482,8 @@ namespace xblick::k4a_node
 #ifdef XBLICK_K4A_CUDA
             if (options.cuda_device)
             {
-                m.nv_jpeg = std::make_unique<NvJpegDecoder>(*options.cuda_device);
-                m.gpu_rect = std::make_unique<GpuRectifier>(*options.cuda_device, m.rect_map);
+                m.nv_jpeg = make_nvjpeg_decoder(*options.cuda_device);
+                m.gpu_rect = make_gpu_rectifier(*options.cuda_device, m.rect_map);
             }
             else
 #endif

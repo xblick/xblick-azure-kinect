@@ -1,10 +1,22 @@
-# Checks that need neither the Azure Kinect SDKs nor a GPU. Building the programs and their tests needs Durchblick's
-# C++ package (built with the CUDA toolkit) and the Azure Kinect Sensor SDK: see docs/build.md.
+# Checks without a camera and without a GPU: the references, and the Python wheel xblick-azure-kinect (the optional
+# install beside tools/setup.sh). The wheel job builds it with tools/build_wheel.sh in manylinux_2_28 (zenoh-c,
+# Durchblick's C++ library and the Sensor SDK's libk4a from source; the CUDA module against NVIDIA's pip packages)
+# and checks its contents; the wheel-check job installs it in a fresh environment and checks the commands' --help and
+# their stop with one line where a part is missing (no driver here, a copy without NVIDIA's packages, no depth
+# engine). The source build with tools/setup.sh and its tests need the Sensor SDK's depth engine and an NVIDIA GPU:
+# see docs/build.md.
 name: checks
 
 on:
   push:
   pull_request:
+
+env:
+  ZENOH_VERSION: "1.10.1"
+  # zenoh-c 1.10.1 names this Rust in its rust-toolchain.toml (tools/build_wheel.sh checks it)
+  RUST_VERSION: "1.97.1"
+  # The core the wheel is built against: Durchblick 0.5.14 (tag v0.5.14), as tools/setup.sh builds it
+  XBLICK_REF: "v0.5.14"
 
 jobs:
   references:
@@ -13,3 +25,89 @@ jobs:
       - uses: actions/checkout@v4
       - name: Reference check (tools/check_references.sh)
         run: tools/check_references.sh
+
+  wheel:
+    runs-on: ubuntu-24.04
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: node
+      - uses: actions/checkout@v4
+        with:
+          repository: xblick/xblick
+          ref: ${{ env.XBLICK_REF }}
+          path: xblick
+      - name: a tag names the package version (CMakeLists.txt)
+        if: github.ref_type == 'tag'
+        working-directory: node
+        run: |
+          version="$(sed -n 's/^project(xblick_azure_kinect VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)"
+          if [ "${GITHUB_REF_NAME}" != "v${version}" ]; then
+            echo "tag ${GITHUB_REF_NAME} does not name the package version ${version} (CMakeLists.txt)" >&2
+            exit 1
+          fi
+      - name: System packages (with their licence files), GCC 9 for the Sensor SDK, Rust
+        run: |
+          dnf install -y -q --setopt=tsflags= libjpeg-turbo-devel libpng-devel libglvnd-devel systemd-devel \
+            openssl-devel libuuid-devel libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel \
+            gcc-toolset-9-gcc gcc-toolset-9-gcc-c++
+          curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain "$RUST_VERSION"
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - name: Wheel (tools/build_wheel.sh)
+        run: |
+          git config --global --add safe.directory '*'
+          node/tools/build_wheel.sh xblick node/dist "$RUNNER_TEMP/k4a-wheel"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xblick-azure-kinect-wheel
+          path: node/dist/*.whl
+
+  # The wheel in a fresh environment, with Durchblick and NVIDIA's packages from PyPI (its dependencies), without
+  # LD_LIBRARY_PATH. The runner has no GPU and no driver; libegl1 and libudev1 are what the README asks a PC for.
+  wheel-check:
+    needs: wheel
+    runs-on: ubuntu-24.04
+    container: python:3.12-bookworm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: node
+      - uses: actions/download-artifact@v4
+        with:
+          name: xblick-azure-kinect-wheel
+          path: dist
+      - name: System libraries
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq libegl1 libudev1 > /dev/null
+      - name: Install into a fresh environment
+        run: |
+          python3 -m pip install --quiet uv
+          uv venv /tmp/check
+          uv pip install --python /tmp/check dist/xblick_azure_kinect-*.whl pytest
+          uv pip list --python /tmp/check | grep -E "^(xblick|nvidia-)"
+          lib=/tmp/check/lib/python3.12/site-packages/xblick_azure_kinect/lib
+          env -u LD_LIBRARY_PATH ldd /tmp/check/lib/python3.12/site-packages/xblick_azure_kinect/bin/* \
+            "$lib/libxblick-azure-kinect-cuda.so"
+          if env -u LD_LIBRARY_PATH ldd /tmp/check/lib/python3.12/site-packages/xblick_azure_kinect/bin/* \
+            "$lib/libxblick-azure-kinect-cuda.so" | grep -q "not found"; then exit 1; fi
+          # NVIDIA's libraries from their packages in this environment
+          for library in nvjpeg/lib/libnvjpeg.so.12 npp/lib/libnppig.so.12 npp/lib/libnppc.so.12 \
+                         cuda_runtime/lib/libcudart.so.12; do
+            env -u LD_LIBRARY_PATH ldd "$lib/libxblick-azure-kinect-cuda.so" | grep -q "=> $lib/../../nvidia/$library"
+          done
+          env -u LD_LIBRARY_PATH /tmp/check/bin/xblick-azure-kinect --help > /dev/null
+          # the parameter client has no --help (as in the source build): without --node it names the option
+          out="$(env -u LD_LIBRARY_PATH /tmp/check/bin/xblick-azure-kinect-parameters 2>&1 || true)"
+          echo "$out" | grep -q -- "--node <prefix>"
+          env -u LD_LIBRARY_PATH /tmp/check/bin/xblick-azure-kinect-setup --help > /dev/null
+      - name: The start's checks (tests/test_wheel.py)
+        timeout-minutes: 5
+        run: env -u LD_LIBRARY_PATH PATH="/tmp/check/bin:$PATH" /tmp/check/bin/python -m pytest -q -rs node/tests/test_wheel.py
+      - name: uv tool install
+        run: |
+          export UV_TOOL_DIR=/tmp/tools UV_TOOL_BIN_DIR=/tmp/tools/bin
+          uv tool install dist/xblick_azure_kinect-*.whl
+          env -u LD_LIBRARY_PATH /tmp/tools/bin/xblick-azure-kinect --help > /dev/null
+          env -u LD_LIBRARY_PATH /tmp/tools/bin/xblick-azure-kinect-setup --help > /dev/null

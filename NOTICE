@@ -10,7 +10,8 @@ tests/data/k4a_test_calibration.json is the file
 src/csharp/Tests/UnitTests/TestCalibration.json of Microsoft's Azure Kinect
 Sensor SDK (https://github.com/microsoft/Azure-Kinect-Sensor-SDK, compared
 with tag v1.4.2; the copy here has no UTF-8 byte order mark). It is under the
-MIT licence of that repository:
+MIT licence of that repository, as is python/xblick_azure_kinect/99-k4a.rules,
+the file scripts/99-k4a.rules of the same tag (the udev rule for the camera):
 
   Copyright (c) Microsoft Corporation. All rights reserved.
 
@@ -43,3 +44,66 @@ libk4a loads the depth engine (libdepthengine). The depth engine is a
 proprietary Microsoft binary under the Microsoft Software License Terms that
 come with it. You install them separately; this repository contains no part of
 them.
+
+The Python wheel
+----------------
+
+The Python wheel xblick-azure-kinect also contains software of others. Their
+licence texts are in the directory licenses/, which the wheel carries in its
+metadata (xblick_azure_kinect-<version>.dist-info/licenses/licenses/).
+
+- xblick_azure_kinect/lib/libk4a.so.1.4, libk4arecord.so.1.4: Microsoft's Azure
+  Kinect Sensor SDK v1.4.2, built from its source code by tools/build_wheel.sh,
+  under the MIT licence quoted above (licenses/Azure-Kinect-Sensor-SDK-LICENSE).
+  Not Microsoft's prebuilt libraries. licenses/k4a-sdk-sources.txt names the
+  SDK's commit and the commit of every git submodule the build used. The two
+  libraries contain code of these submodules, each under its own licence:
+  - azure-c-shared-utility (MIT): licenses/azure-c-shared-utility-LICENSE
+  - cJSON (MIT): licenses/cJSON-LICENSE
+  - libjpeg-turbo (IJG License, Modified BSD License, zlib License). This
+    software is based in part on the work of the Independent JPEG Group:
+    licenses/k4a-libjpeg-turbo-LICENSE.md, licenses/k4a-libjpeg-turbo-README.ijg
+  - libusb (GNU Lesser General Public License 2.1): licenses/libusb-COPYING
+  - libuvc, Microsoft's fork (BSD): licenses/libuvc-LICENSE.txt
+  - libyuv (BSD): licenses/libyuv-LICENSE, licenses/libyuv-PATENTS
+  - libebml and libmatroska (GNU Lesser General Public License 2.1):
+    licenses/libebml-LICENSE.LGPL, licenses/libmatroska-LICENSE.LGPL
+  - spdlog (MIT) with fmt (MIT): licenses/spdlog-LICENSE, licenses/fmt-LICENSE.rst
+  The complete source code of libusb, libebml and libmatroska as built is at the
+  commits that licenses/k4a-sdk-sources.txt names, in their repositories
+  (https://github.com/libusb/libusb, https://github.com/Matroska-Org/libebml,
+  https://github.com/Matroska-Org/libmatroska), and the SDK's build scripts at
+  its commit. libk4a.so.1.4 and libk4arecord.so.1.4 are separate files of the
+  wheel: they can be replaced by a build of a modified version of these
+  libraries.
+
+- xblick_azure_kinect/lib/libzenohc.so: Eclipse zenoh-c 1.10.1
+  (https://github.com/eclipse-zenoh/zenoh-c), built from its source by
+  tools/build_wheel.sh. Eclipse zenoh-c is made available under the terms of
+  the Eclipse Public License 2.0 or the Apache License, Version 2.0
+  (SPDX-License-Identifier: EPL-2.0 OR Apache-2.0). Its licence and notice:
+  licenses/zenoh-c-LICENSE, licenses/zenoh-c-NOTICE.md. The library contains
+  the Rust crates that zenoh-c is built from, each under its own licence.
+  licenses/zenoh-c-crates.txt lists each crate with the licence expression of
+  its Cargo.toml and the licence files the crate ships, with their texts. The
+  list marks the crates that ship no licence file. The crate option-ext 0.2.0
+  is under the Mozilla Public License 2.0. Its source code is available at
+  https://crates.io/crates/option-ext/0.2.0.
+
+- The programs contain nlohmann_json 3.12.0 (https://github.com/nlohmann/json,
+  MIT): licenses/nlohmann-json-LICENSE.MIT.
+
+- xblick_azure_kinect.libs/ (libjpeg): libjpeg-turbo 1.5.3 as packaged by
+  AlmaLinux 8, added to the wheel by auditwheel. This software is based in part
+  on the work of the Independent JPEG Group. libjpeg-turbo is covered by the
+  IJG License, the Modified (3-clause) BSD License and the zlib License:
+  licenses/libjpeg-turbo-LICENSE.md, licenses/libjpeg-turbo-README.ijg.
+
+- xblick_azure_kinect.libs/ (libpng16): libpng 1.6.34 as packaged by AlmaLinux
+  8, added to the wheel by auditwheel, under the libpng license:
+  licenses/libpng-LICENSE.
+
+The wheel does not contain the depth engine (libdepthengine) or any file of
+NVIDIA. Its setup command xblick-azure-kinect-setup downloads Microsoft's
+package on the user's PC; nvJPEG, NPP and the CUDA runtime are NVIDIA's PyPI
+packages, which the wheel depends on.

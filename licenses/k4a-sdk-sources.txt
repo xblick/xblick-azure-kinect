@@ -1,0 +1,26 @@
+# The Azure Kinect Sensor SDK v1.4.2 (commit cd2b3e9894b26fbeebfe34a5cab5b26efab0939a, https://github.com/microsoft/Azure-Kinect-Sensor-SDK)
+# and its git submodules, as tools/build_wheel.sh builds libk4a and libk4arecord from them: commit, path.
+5a70f27709a2d4869b7db6794887481db28260d0 extern/azure_c_shared/src
+5926caf4e42e98e730e6d03395788205649a3ada extern/azure_c_shared/src/deps/azure-macro-utils-c
+5e3d93112360ee2d4a622b1c48eb70896da3e8c7 extern/azure_c_shared/src/deps/umock-c
+5926caf4e42e98e730e6d03395788205649a3ada extern/azure_c_shared/src/deps/umock-c/deps/azure-macro-utils-c
+13baad856c3cb9e5457bff52bc8c2de87f21fa07 extern/azure_c_shared/src/deps/umock-c/deps/ctest
+5926caf4e42e98e730e6d03395788205649a3ada extern/azure_c_shared/src/deps/umock-c/deps/ctest/deps/azure-macro-utils-c
+a33cd0a8524da8e45642baa112a506d4d2e5a59e extern/azure_c_shared/src/deps/umock-c/deps/testrunner
+5926caf4e42e98e730e6d03395788205649a3ada extern/azure_c_shared/src/deps/umock-c/deps/testrunner/deps/azure-macro-utils-c
+13baad856c3cb9e5457bff52bc8c2de87f21fa07 extern/azure_c_shared/src/testtools/ctest
+5926caf4e42e98e730e6d03395788205649a3ada extern/azure_c_shared/src/testtools/ctest/deps/azure-macro-utils-c
+a33cd0a8524da8e45642baa112a506d4d2e5a59e extern/azure_c_shared/src/testtools/testrunner
+5926caf4e42e98e730e6d03395788205649a3ada extern/azure_c_shared/src/testtools/testrunner/deps/azure-macro-utils-c
+08103f048e5f54c8f60aaefda16761faf37114f2 extern/cjson/src
+999f3556fdd80983b10051746264489f2cb1ef16 extern/glfw/src
+2fe3bd994b3189899d93f1d5a881e725e046fdc2 extern/googletest/src
+6a0d0dab5a9f0b9518a2bc9bb456a69895ae0962 extern/imgui/src
+87b4d4f787d6b444f29a3a9e854b916d10080c96 extern/libebml/src
+bb3d325624526c91646bb9af9578d7198c082d51 extern/libjpeg-turbo/src
+2cf0198cf3df9ced38c27fac9d45bea4fe8fd74f extern/libmatroska/src
+2bb21ad417d41c6c25a482e3f74fa26c595abf08 extern/libsoundio/src
+0034b2afdcdb1614e78edaa2a9e22d5936aeae5d extern/libusb/src
+5fc483d596c63f1bcd36be35d512468c0b75c5f3 extern/libuvc/src
+9a07219dc8fbf2b77e390d16bd24809444838a91 extern/libyuv/src
+560df2878ad308b27873b3cc5e810635d69cfad6 extern/spdlog/src

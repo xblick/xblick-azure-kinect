@@ -41,23 +41,18 @@ namespace xblick::k4a_node
     // 0 (no depth) outside: blending would make up depths between a surface and what is behind it, or a hole.
     void remap_depth16(const RectifyMap& map, const std::uint16_t* src, std::uint16_t* dst);
 
-#ifdef XBLICK_K4A_CUDA
-    // The remap on the GPU with NPP (nppiRemap, bilinear), from and to device memory.
+    // The remap on the GPU with NPP (nppiRemap, bilinear), from and to device memory (gpu_rectify.cpp; in the wheel
+    // part of its CUDA module, nvjpeg_decoder.hpp).
     class GpuRectifier
     {
     public:
-        GpuRectifier(int device, const RectifyMap& map);
-        ~GpuRectifier();
-        GpuRectifier(const GpuRectifier&) = delete;
-        GpuRectifier& operator=(const GpuRectifier&) = delete;
+        virtual ~GpuRectifier() = default;
 
         // Remaps the rgb8 image at src (device memory, rows without padding) on stream (a cudaStream_t) into the
         // rectifier's buffer, valid until the next call; the result is ready on that stream when this returns.
-        std::uint64_t rectify(std::uint64_t src, std::uint64_t stream);
-
-    private:
-        struct Impl;
-        std::unique_ptr<Impl> impl_;
+        virtual std::uint64_t rectify(std::uint64_t src, std::uint64_t stream) = 0;
     };
-#endif
+
+    // A rectifier on CUDA device `device` for `map`.
+    std::unique_ptr<GpuRectifier> make_gpu_rectifier(int device, const RectifyMap& map);
 }  // namespace xblick::k4a_node

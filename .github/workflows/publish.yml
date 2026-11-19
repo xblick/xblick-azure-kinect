@@ -1,0 +1,76 @@
+# Publish xblick-azure-kinect on PyPI: on a tag v<version> (the version of CMakeLists.txt) or by hand
+# (workflow_dispatch). Builds the wheel the CI's job wheel builds (tools/build_wheel.sh, manylinux_2_28, against the
+# core tag XBLICK_REF) and uploads it with PyPI's trusted publishing: no stored token. PyPI's publisher for
+# xblick-azure-kinect names the owner xblick, the repository xblick-azure-kinect, the workflow publish.yml and the
+# environment pypi. No sdist: building the programs needs Durchblick's C++ library and the Sensor SDK (docs/build.md).
+#
+# The upload runs only when the repository variable PYPI_PUBLISHER is "ready", set once PyPI's (pending) publisher
+# exists. Before that, a tag builds and checks the wheel and keeps it as the artifact dist; the job pypi is skipped,
+# so nothing reaches PyPI.
+name: publish
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+env:
+  ZENOH_VERSION: "1.10.1"
+  # zenoh-c 1.10.1 names this Rust in its rust-toolchain.toml (tools/build_wheel.sh checks it)
+  RUST_VERSION: "1.97.1"
+  # The core the wheel is built against: Durchblick 0.5.14 (tag v0.5.14), as tools/setup.sh builds it
+  XBLICK_REF: "v0.5.14"
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: node
+      - uses: actions/checkout@v4
+        with:
+          repository: xblick/xblick
+          ref: ${{ env.XBLICK_REF }}
+          path: xblick
+      - name: a tag names the package version (CMakeLists.txt)
+        if: github.ref_type == 'tag'
+        working-directory: node
+        run: |
+          version="$(sed -n 's/^project(xblick_azure_kinect VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)"
+          if [ "${GITHUB_REF_NAME}" != "v${version}" ]; then
+            echo "tag ${GITHUB_REF_NAME} does not name the package version ${version} (CMakeLists.txt)" >&2
+            exit 1
+          fi
+      - name: System packages (with their licence files), GCC 9 for the Sensor SDK, Rust
+        run: |
+          dnf install -y -q --setopt=tsflags= libjpeg-turbo-devel libpng-devel libglvnd-devel systemd-devel \
+            openssl-devel libuuid-devel libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel \
+            gcc-toolset-9-gcc gcc-toolset-9-gcc-c++
+          curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain "$RUST_VERSION"
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+      - name: Wheel (tools/build_wheel.sh)
+        run: |
+          git config --global --add safe.directory '*'
+          node/tools/build_wheel.sh xblick dist "$RUNNER_TEMP/k4a-wheel"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  pypi:
+    needs: build
+    if: vars.PYPI_PUBLISHER == 'ready'
+    runs-on: ubuntu-24.04
+    environment:
+      name: pypi
+      url: https://pypi.org/p/xblick-azure-kinect
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

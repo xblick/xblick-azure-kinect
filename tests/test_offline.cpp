@@ -1018,9 +1018,9 @@ namespace
         const std::uint8_t* decoded = cpu.decode(jpeg, 1280, 720);
         const std::vector<std::uint8_t> reference(decoded, decoded + rgb.size());
 
-        NvJpegDecoder gpu(0);
-        const std::uint64_t ptr = gpu.decode(jpeg, 1280, 720);
-        gpu.synchronize();
+        const std::unique_ptr<NvJpegDecoder> gpu = make_nvjpeg_decoder(0);
+        const std::uint64_t ptr = gpu->decode(jpeg, 1280, 720);
+        gpu->synchronize();
         std::vector<std::uint8_t> host(rgb.size());
         cudaMemcpy(host.data(), reinterpret_cast<void*>(ptr), host.size(), cudaMemcpyDeviceToHost);
         compare(host.data(), reference.data(), host.size(), "nvJPEG");

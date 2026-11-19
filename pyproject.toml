@@ -1,0 +1,76 @@
+# The Python wheel xblick-azure-kinect: the programs xblick-azure-kinect and xblick-azure-kinect-parameters
+# (CMakeLists.txt, SKBUILD) with libk4a, libk4arecord, libzenohc.so, the EGL shim and the CUDA module
+# libxblick-azure-kinect-cuda.so in the package xblick_azure_kinect; the commands of the same names and
+# xblick-azure-kinect-setup (python/xblick_azure_kinect). An optional install beside tools/setup.sh (README.md).
+#
+# The wheel for PyPI (manylinux_2_28; the Sensor SDK built from its source; libjpeg and libpng inside):
+# tools/build_wheel.sh. licenses/: NOTICE.
+#
+# nvJPEG, NPP and the CUDA runtime are not in the wheel. They are NVIDIA's pip packages: the build compiles and links
+# the module against the versions below (the oldest this wheel accepts: the CUDA 12.0 runtime, nvJPEG and NPP of CUDA
+# 12.8, the first with Blackwell GPUs), and the installed wheel depends on them (project.dependencies), so that pip and
+# uv put them into the same site-packages, where the module finds them (CMakeLists.txt). The depth engine of
+# Microsoft's Sensor SDK is not in the wheel either: xblick-azure-kinect-setup downloads it.
+[build-system]
+requires = [
+    "scikit-build-core>=0.11",
+    "nvidia-nvjpeg-cu12==12.3.5.57",
+    "nvidia-npp-cu12==12.3.3.65",
+    "nvidia-cuda-runtime-cu12==12.0.107",
+    "nvidia-cuda-nvcc-cu12==12.0.76",  # crt/host_defines.h of the same CUDA 12.0, which cuda_runtime_api.h includes
+]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "xblick-azure-kinect"
+dynamic = ["version"]  # from CMakeLists.txt, project(VERSION)
+description = "An Azure Kinect's colour, depth, IR and IMU as Durchblick streams. After the install, run xblick-azure-kinect-setup once: it fetches Microsoft's depth engine under Microsoft's terms."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "licenses/*"]  # licenses/: what the wheel contains of others (NOTICE)
+authors = [{ name = "David Schneider" }]
+requires-python = ">=3.10,<3.14"  # the core's wheels: CPython 3.10 to 3.13
+# xblick: the node's cache directory and the download of the setup command (xblick.paths, xblick.weights).
+# libnvjpeg.so.12, libnppig.so.12, libnppc.so.12 and libcudart.so.12 of the CUDA module (NPP is most of the download);
+# CUDA 12 needs an NVIDIA driver 525 or newer
+dependencies = [
+    "xblick>=0.5.14,<0.6",
+    "nvidia-nvjpeg-cu12>=12.3.5,<13",
+    "nvidia-npp-cu12>=12.3.3,<13",
+    "nvidia-cuda-runtime-cu12>=12.0,<13",
+]
+keywords = ["xblick", "zenoh", "camera", "azure kinect", "depth camera", "rgbd", "robotics"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3 :: Only",
+    "Environment :: GPU :: NVIDIA CUDA :: 12",
+    "Topic :: Multimedia :: Video :: Capture",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+
+[project.scripts]
+xblick-azure-kinect = "xblick_azure_kinect:main"
+xblick-azure-kinect-parameters = "xblick_azure_kinect:parameters_main"
+xblick-azure-kinect-setup = "xblick_azure_kinect.sdk:main"
+
+[project.urls]
+Homepage = "https://github.com/xblick/xblick-azure-kinect"
+Repository = "https://github.com/xblick/xblick-azure-kinect"
+Documentation = "https://github.com/xblick/xblick-azure-kinect/tree/main/docs"
+Issues = "https://github.com/xblick/xblick-azure-kinect/issues"
+Changelog = "https://github.com/xblick/xblick-azure-kinect/blob/main/CHANGELOG.md"
+
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+metadata.version.provider = "scikit_build_core.metadata.regex"
+metadata.version.input = "CMakeLists.txt"
+metadata.version.regex = 'project\(xblick_azure_kinect VERSION (?P<value>[0-9.]+)'
+wheel.packages = ["python/xblick_azure_kinect"]
+# programs, no Python extension: one wheel for every Python 3 (py3-none-<platform>)
+wheel.py-api = "py3"
+build-dir = "build/{wheel_tag}"
+cmake.define.BUILD_TESTING = "OFF"
