@@ -261,8 +261,9 @@ for name in xblick-azure-kinect xblick-azure-kinect-parameters; do
     echo "$program: a library does not resolve" >&2
     exit 1
   fi
-  env -u LD_LIBRARY_PATH ldd "$program" | grep -q "xblick_azure_kinect/bin/../lib/libk4a.so.1.4"
-  env -u LD_LIBRARY_PATH ldd "$program" | grep -q "xblick_azure_kinect/bin/../lib/libzenohc.so"
+  libraries="$(env -u LD_LIBRARY_PATH ldd "$program")"
+  grep -q "xblick_azure_kinect/bin/../lib/libk4a.so.1.4" <<< "$libraries"
+  grep -q "xblick_azure_kinect/bin/../lib/libzenohc.so" <<< "$libraries"
   if env -u LD_LIBRARY_PATH ldd "$program" | grep -E "=> /(usr/)?lib.*/lib(jpeg|png|k4a)"; then
     echo "$program takes libjpeg, libpng or libk4a from the system" >&2
     exit 1
@@ -300,11 +301,12 @@ if ! readelf -d "$module" | grep -F "(RPATH)" | grep -q -F "[$rpath]"; then
   exit 1
 fi
 # the CUDA runtime from libcudart.so.12 (NVIDIA's package), not linked in statically; the remap kernel's own code
-if ! nm -D --undefined-only "$module" | grep -q -w cudaMalloc; then
+if ! grep -q -w cudaMalloc <<< "$(nm -D --undefined-only "$module")"; then
   echo "$module does not take the CUDA runtime from libcudart.so.12: the static runtime would put NVIDIA's code into it" >&2
   exit 1
 fi
-readelf -S "$module" | grep -q "\.nv_fatbin" || { echo "$module has no kernel binaries (.nv_fatbin)" >&2; exit 1; }
+sections="$(readelf -S -W "$module")"  # captured: grep -q would end readelf with SIGPIPE under pipefail
+grep -q "\.nv_fatbin" <<< "$sections" || { echo "$module has no kernel binaries (.nv_fatbin)" >&2; exit 1; }
 metadata="$(cd "$WORK/check" && cat xblick_azure_kinect-*.dist-info/METADATA)"
 for requirement in "xblick<0.6,>=0.5.14" "nvidia-nvjpeg-cu12<13,>=12.3.5" \
                    "nvidia-cuda-runtime-cu12<13,>=12.0"; do
