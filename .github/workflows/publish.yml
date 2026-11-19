@@ -4,10 +4,6 @@
 # xblick-azure-kinect names the owner xblick, the repository xblick-azure-kinect, the workflow publish.yml and the
 # environment pypi. No sdist: building the programs needs Durchblick's C++ library and the Sensor SDK (docs/build.md).
 #
-# The upload runs only when the repository variable PYPI_PUBLISHER is "ready", set once PyPI's (pending) publisher
-# exists. Before that, a tag builds and checks the wheel and keeps it as the artifact dist; the job pypi is skipped,
-# so nothing reaches PyPI.
-#
 # On a tag, the job github-release also attaches the wheel and the source archive of the LGPL libraries in libk4a and
 # libk4arecord (xblick-azure-kinect-<version>-lgpl-sources.tar.gz, NOTICE) to the GitHub release of the tag: the
 # release made by hand, or a new one with a short note when there is none yet.
@@ -69,7 +65,6 @@ jobs:
 
   pypi:
     needs: build
-    if: vars.PYPI_PUBLISHER == 'ready'
     runs-on: ubuntu-24.04
     environment:
       name: pypi
