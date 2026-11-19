@@ -1,7 +1,7 @@
 #!/bin/bash
 # Sets xblick-azure-kinect up from scratch or updates it: the prerequisites, the build, the tests, the installation.
 #
-#     tools/setup.sh [--cuda | --no-gpu] [--cuda-toolkit DIR]
+#     tools/setup.sh [--cuda | --no-gpu] [--cuda-toolkit DIR] [--accept-microsoft-license]
 #
 # * Prerequisites (pinned versions, each download checked against its sha256) in the node's cache directory of
 #   Durchblick, cache_dir("azure-kinect"): $XBLICK_HOME/cache/azure-kinect, else $XDG_CACHE_HOME/xblick/azure-kinect,
@@ -10,25 +10,34 @@
 # * The build in build-setup/, the tests (ctest), the installation in install/ with install/env.sh, which puts the
 #   programs on PATH.
 # * Without an option, the CUDA parts are built when nvidia-smi lists a GPU. --cuda: always. --no-gpu: never. They
-#   need a CUDA toolkit with nvJPEG and NPP, at /usr/local/cuda or at --cuda-toolkit DIR: 12 or newer.
+#   need a CUDA toolkit with nvcc and nvJPEG, at /usr/local/cuda or at --cuda-toolkit DIR: 12 or newer.
 # * Body tracking (xblick-k4abt) is the repository xblick-k4abt, with a setup script of its own.
 #
-# It never asks and never uses sudo. What needs root it names with the command, then stops (system packages) or goes
+# * Microsoft's Sensor SDK packages (with the depth engine) are under Microsoft's licence terms: the script shows
+#   their name and link and downloads nothing of them before they are accepted, by a typed yes when stdin is a
+#   terminal, by --accept-microsoft-license or by XBLICK_ACCEPT_MICROSOFT_LICENSE=yes. The acceptance is recorded in
+#   the unpacked SDK's directory (microsoft-license-accepted.txt); a later call does not ask again.
+#
+# It asks only for that acceptance and never uses sudo. What needs root it names with the command, then stops (system packages) or goes
 # on (the udev rule for the camera). Run again, it does only what changed.
 set -euo pipefail
 
 usage() {
     cat <<'EOF'
-Usage: tools/setup.sh [--cuda | --no-gpu] [--cuda-toolkit DIR]
+Usage: tools/setup.sh [--cuda | --no-gpu] [--cuda-toolkit DIR] [--accept-microsoft-license]
 
 Installs the prerequisites into the cache directory of xblick (cache/azure-kinect below $XBLICK_HOME, else
 $XDG_CACHE_HOME/xblick/azure-kinect, else ~/.cache/xblick/azure-kinect), builds the node in build-setup/, runs its
 tests and installs it in install/. Afterwards: source install/env.sh.
 
-  --cuda              build the CUDA parts (nvJPEG decoding, NPP rectification, xblick-points); default when
+  --cuda              build the CUDA parts (nvJPEG decoding, GPU rectification, xblick-points); default when
                       nvidia-smi lists a GPU
   --no-gpu            build without CUDA (the depth engine still needs an NVIDIA GPU with EGL at run time)
-  --cuda-toolkit DIR  the CUDA toolkit, 12 or newer, with nvJPEG and NPP (default /usr/local/cuda)
+  --cuda-toolkit DIR  the CUDA toolkit, 12 or newer, with nvcc and nvJPEG (default /usr/local/cuda)
+  --accept-microsoft-license
+                      accept the Microsoft Software License Terms of the Azure Kinect Sensor SDK without the
+                      question (the same: XBLICK_ACCEPT_MICROSOFT_LICENSE=yes); without either the script asks in
+                      a terminal and stops elsewhere
   -h, --help          this text
 
 Body tracking (xblick-k4abt) is the repository https://github.com/xblick/xblick-k4abt, with a setup script of its
@@ -43,11 +52,13 @@ die() {
 
 gpu=auto
 toolkit=/usr/local/cuda
+accept_license=0
 while (($#)); do
     case $1 in
         --cuda) [[ $gpu != off ]] || die "--cuda and --no-gpu exclude each other"; gpu=on ;;
         --no-gpu) [[ $gpu != on ]] || die "--cuda and --no-gpu exclude each other"; gpu=off ;;
         --cuda-toolkit) (($# > 1)) || die "--cuda-toolkit needs a directory"; toolkit=$2; shift ;;
+        --accept-microsoft-license) accept_license=1 ;;
         --body-tracking)
             die "--body-tracking: body tracking is the repository https://github.com/xblick/xblick-k4abt since" \
                 "xblick-azure-kinect 0.4.0, with a setup script of its own" ;;
@@ -121,8 +132,8 @@ if [[ $gpu == on ]]; then
     ((toolkit_major >= 12)) ||
         die "the CUDA toolkit at $toolkit is $toolkit_version, the node needs 12 or newer:" \
             "sudo apt install cuda-toolkit-12-8, or --cuda-toolkit DIR, or --no-gpu"
-    for file in include/nvjpeg.h lib64/libnvjpeg.so lib64/libnppig.so; do
-        [[ -e $toolkit/$file ]] || die "the CUDA toolkit at $toolkit has no $file (nvJPEG and NPP are needed)"
+    for file in include/nvjpeg.h lib64/libnvjpeg.so; do
+        [[ -e $toolkit/$file ]] || die "the CUDA toolkit at $toolkit has no $file (nvJPEG is needed)"
     done
 fi
 
@@ -174,11 +185,42 @@ finished() { [[ -f $1/.setup-done ]]; }
 mark_finished() { touch "$1/.setup-done"; }
 
 # notices for the binaries that come under their makers' terms
+terms_name="Microsoft Software License Terms, Microsoft Azure Kinect Sensor Software Development Kit"
+terms_url="https://www.nuget.org/packages/Microsoft.Azure.Kinect.Sensor/$k4a_version/License"
 notice_k4a="Microsoft's Azure Kinect Sensor SDK $k4a_version binaries (libk4a, libk4arecord, the depth engine) are\
  under the Microsoft Software License Terms of the Azure Kinect Sensor SDK:\
  https://www.nuget.org/packages/Microsoft.Azure.Kinect.Sensor/$k4a_version/License"
 notice_cuda_header="NVIDIA's CUDA runtime package $cuda_header_version (for its header cuda.h) is under the NVIDIA CUDA\
  Toolkit End User License Agreement: https://docs.nvidia.com/cuda/eula/index.html"
+
+k4a=$cache/k4a-$k4a_version
+# Microsoft's terms, accepted before anything of its packages is downloaded or unpacked, recorded beside them
+license_record=$k4a/microsoft-license-accepted.txt
+license_how=
+if [[ ! -f $license_record ]]; then
+    terms="the $terms_name ($terms_url; text then in $k4a/usr/share/doc/libk4a1.4/LICENSE.txt)"
+    ways="pass --accept-microsoft-license or set XBLICK_ACCEPT_MICROSOFT_LICENSE=yes"
+    if ((accept_license)); then
+        license_how=--accept-microsoft-license
+    elif [[ -n ${XBLICK_ACCEPT_MICROSOFT_LICENSE+set} ]]; then
+        value=$XBLICK_ACCEPT_MICROSOFT_LICENSE
+        [[ ${value,,} == yes ]] ||
+            die "XBLICK_ACCEPT_MICROSOFT_LICENSE='$value': Microsoft's terms are accepted only with the value yes;" \
+                "nothing of the Sensor SDK downloaded"
+        license_how=XBLICK_ACCEPT_MICROSOFT_LICENSE=yes
+    elif [[ -t 0 ]]; then
+        echo "Microsoft's Azure Kinect Sensor SDK $k4a_version packages (libk4a, libk4arecord, the depth engine) are" \
+            "under $terms. Nothing of them is downloaded before you accept them."
+        read -r -p "Type yes to accept them (or $ways): " answer
+        [[ ${answer,,} == yes ]] ||
+            die "Microsoft's terms are not accepted (answer '$answer'): nothing of the Sensor SDK downloaded"
+        license_how="typed yes at the prompt"
+    else
+        die "Microsoft's Azure Kinect Sensor SDK packages are under $terms, not accepted and no terminal to ask:" \
+            "$ways, or run it in a terminal and type yes; nothing of them downloaded"
+    fi
+    [[ $license_how == "typed yes at the prompt" ]] || echo "$terms accepted by $license_how"
+fi
 
 # ------------------------------------------------------------------------------------------------- Zenoh
 
@@ -266,6 +308,19 @@ if ! finished "$k4a"; then
     cp "$downloads/99-k4a.rules" "$k4a/99-k4a.rules"
     mark_finished "$k4a"
 fi
+if [[ -n $license_how ]]; then
+    mkdir -p "$k4a"
+    {
+        echo "# Written by tools/setup.sh: Microsoft's terms for the Azure Kinect Sensor SDK $k4a_version packages, accepted."
+        echo "accepted: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        echo "how: $license_how"
+        echo "terms: $terms_name"
+        echo "link: $terms_url"
+        echo "text: $k4a/usr/share/doc/libk4a1.4/LICENSE.txt"
+        echo "packages: libk4a1.4_${k4a_version}_amd64.deb, libk4a1.4-dev_${k4a_version}_amd64.deb"
+    } > "$license_record"
+    echo "the acceptance is recorded in $license_record"
+fi
 
 # the udev rule that lets a user other than root open the camera (scripts/99-k4a.rules of the Sensor SDK)
 if ! grep -qs '045e.*097c' /etc/udev/rules.d/*.rules /lib/udev/rules.d/*.rules; then
@@ -278,7 +333,7 @@ fi
 build=$repo/build-setup
 install=$repo/install
 if [[ $gpu == on ]]; then
-    node_options=(-DXBLICK_K4A_CUDA=ON -DCUDAToolkit_ROOT="$toolkit")
+    node_options=(-DXBLICK_K4A_CUDA=ON -DCUDAToolkit_ROOT="$toolkit" -DCMAKE_CUDA_COMPILER="$toolkit/bin/nvcc")
 else
     node_options=(-DXBLICK_K4A_CUDA=OFF)
 fi

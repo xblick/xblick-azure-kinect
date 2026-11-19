@@ -1,7 +1,10 @@
 """The command xblick-azure-kinect-setup: what the wheel cannot contain, on this PC.
 
-    xblick-azure-kinect-setup
+    xblick-azure-kinect-setup [--accept-microsoft-license]
 
+0. Microsoft's licence terms, accepted before anything is downloaded or unpacked: typed yes at a prompt (stdin a
+   terminal), --accept-microsoft-license, or XBLICK_ACCEPT_MICROSOFT_LICENSE=yes. The acceptance is recorded beside
+   the engine (ACCEPTANCE_FILE: date, how, terms, link), so a later call does not ask again.
 1. The depth engine (libdepthengine.so.2.0, closed source, Microsoft's terms): Microsoft's package libk4a1.4 at the
    pinned version and SHA-256 that tools/setup.sh uses, downloaded into the node's cache directory
    (``xblick.paths.cache_dir("azure-kinect")``: ``~/.cache/xblick/azure-kinect``, ``$XBLICK_HOME/cache/azure-kinect``)
@@ -12,13 +15,14 @@
    command for those missing, exit 1.
 3. The udev rule that lets a user other than root open the camera: the ``sudo`` commands when it is missing.
 
-It never asks and never uses sudo. Run again, it downloads nothing when the engine is in place.
+It never uses sudo and asks nothing but the acceptance. Run again, it downloads nothing when the engine is in place.
 """
 
 from __future__ import annotations
 
 import argparse
 import ctypes
+import datetime
 import glob
 import hashlib
 import io
@@ -53,6 +57,11 @@ TERMS = (f"{PROG}: Microsoft's package libk4a1.4 {K4A_PACKAGE_VERSION} contains 
 SYSTEM_LIBRARIES = {"libGL.so.1": "libgl1", "libX11.so.6": "libx11-6", "libEGL.so.1": "libegl1",
                     "libudev.so.1": "libudev1"}
 UDEV_RULES = Path(__file__).with_name("99-k4a.rules")  # scripts/99-k4a.rules of the Sensor SDK v1.4.2 (MIT)
+# the acceptance of Microsoft's terms: the option, the variable (its value: yes), the record beside the engine
+ACCEPT_OPTION = "--accept-microsoft-license"
+ACCEPT_VARIABLE = "XBLICK_ACCEPT_MICROSOFT_LICENSE"
+ACCEPTANCE_FILE = "microsoft-license-accepted.txt"
+TERMS_NAME = "Microsoft Software License Terms, Microsoft Azure Kinect Sensor Software Development Kit"
 
 
 def engine_dir() -> Path:
@@ -137,9 +146,60 @@ def has_nvidia_egl() -> bool:
                 glob.glob("/etc/glvnd/egl_vendor.d/*nvidia*.json"))
 
 
-def setup() -> int:
+class NotAccepted(Exception):
+    """Microsoft's terms are not accepted: one line for the user."""
+
+
+def accepted(target: Path) -> bool:
+    """Whether an earlier call recorded the acceptance beside the engine."""
+    return (target / ACCEPTANCE_FILE).is_file()
+
+
+def accept(target: Path, option: bool, stdin=None, out=None) -> str:
+    """How Microsoft's terms are accepted now (for the record), or NotAccepted (one line). Shows the terms' name,
+    link and where their text will be; accepted by the option, the variable (yes) or a typed yes at a terminal."""
+    stdin, out = stdin or sys.stdin, out or sys.stdout
+    terms = (f"the {TERMS_NAME} ({TERMS_URL}; text then in {target / 'LICENSE.txt'})")
+    ways = f"pass {ACCEPT_OPTION} or set {ACCEPT_VARIABLE}=yes"
+    value = os.environ.get(ACCEPT_VARIABLE)
+    if option or (value is not None and value.strip().lower() == "yes"):
+        how = ACCEPT_OPTION if option else f"{ACCEPT_VARIABLE}=yes"
+        print(f"{PROG}: {terms} accepted by {how}", file=out, flush=True)
+        return how
+    if value is not None:
+        raise NotAccepted(f"{ACCEPT_VARIABLE}={value!r}: Microsoft's terms are accepted only with the value yes; "
+                          f"nothing downloaded")
+    if not stdin.isatty():
+        raise NotAccepted(f"the depth engine is under {terms}, not accepted and no terminal to ask: {ways}, or run it "
+                          "in a terminal and type yes; nothing downloaded")
+    print(f"{PROG}: the depth engine comes from Microsoft's package libk4a1.4 {K4A_PACKAGE_VERSION} under {terms}. "
+          "Nothing is downloaded before you accept them.", file=out, flush=True)
+    print(f"Type yes to accept them (or {ways}): ", end="", file=out, flush=True)
+    answer = stdin.readline().strip().lower()
+    if answer != "yes":
+        raise NotAccepted(f"Microsoft's terms are not accepted (answer {answer!r}): nothing downloaded")
+    return "typed yes at the prompt"
+
+
+def record_acceptance(target: Path, how: str) -> None:
+    """The acceptance beside the engine: when, how, which terms, for which package."""
+    now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    lines = [f"# Written by {PROG}: Microsoft's terms for the depth engine, accepted.", f"accepted: {now}",
+             f"how: {how}", f"terms: {TERMS_NAME}", f"link: {TERMS_URL}", f"text: {target / 'LICENSE.txt'}",
+             f"package: {PACKAGE} (sha256 {PACKAGE_SHA256})"]
+    (target / ACCEPTANCE_FILE).write_text("\n".join(lines) + "\n")
+
+
+def setup(accept_option: bool = False) -> int:
     target = engine_dir()
     engine = target / ENGINE
+    how = None
+    if not accepted(target):
+        try:
+            how = accept(target, accept_option)
+        except NotAccepted as error:
+            print(f"{PROG}: {error}", file=sys.stderr, flush=True)
+            return 1
     if engine.is_file() and sha256_of(engine) == ENGINE_SHA256:
         print(f"{PROG}: the depth engine is in place: {engine}", flush=True)
     else:
@@ -151,9 +211,15 @@ def setup() -> int:
             return store.fail(error)
         if not downloaded:  # the terms are printed before a download, and before unpacking a package found there
             print(TERMS, flush=True)
+        record = (target / ACCEPTANCE_FILE).read_text() if accepted(target) else None  # unpacking replaces the dir
         unpack_engine(store.file(package), target)
+        if record is not None:
+            (target / ACCEPTANCE_FILE).write_text(record)
         print(f"{PROG}: the depth engine is in place: {engine} (Microsoft's terms: {target / 'LICENSE.txt'})",
               flush=True)
+    if how is not None:
+        record_acceptance(target, how)
+        print(f"{PROG}: the acceptance is recorded in {target / ACCEPTANCE_FILE}", flush=True)
 
     code = 0
     missing = missing_libraries()
@@ -183,10 +249,13 @@ def setup() -> int:
 def main(argv=None) -> None:
     parser = argparse.ArgumentParser(
         prog=PROG,
-        description="Downloads Microsoft's package libk4a1.4 (pinned version and SHA-256) into the node's cache "
-                    "directory and unpacks its depth engine there, where xblick-azure-kinect loads it; names the "
+        description="Once Microsoft's terms are accepted, downloads Microsoft's package libk4a1.4 (pinned version "
+                    "and SHA-256) into the node's cache directory and unpacks its depth engine there, where xblick-azure-kinect loads it; names the "
                     "sudo commands for the system libraries and the udev rule that are missing.",
         epilog=f"The package goes to {paths.cache_dir('azure-kinect') / 'downloads'}: a file there with the right "
                "checksum is not downloaded again. The engine is under Microsoft's terms: " + TERMS_URL)
-    parser.parse_args(argv)
-    sys.exit(setup())
+    parser.add_argument(ACCEPT_OPTION, action="store_true",
+                        help=f"accept the {TERMS_NAME} ({TERMS_URL}) without the question; the same: "
+                             f"{ACCEPT_VARIABLE}=yes")
+    args = parser.parse_args(argv)
+    sys.exit(setup(args.accept_microsoft_license))

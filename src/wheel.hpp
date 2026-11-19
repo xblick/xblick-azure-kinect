@@ -15,6 +15,8 @@ namespace xblick::k4a_node
     // program. Never throws; require_depth_engine says what went wrong.
     void preload_depth_engine();
 
-    // Throws with one line naming the setup command unless preload_depth_engine loaded the engine.
+    // Throws with one line naming the setup command unless preload_depth_engine loaded the engine. The program calls it
+    // where the engine is needed: a camera (the SDK turns its raw depth frames into depth images with the engine), and
+    // --sdk-depth-to-color (the SDK's transformation runs in the engine). A recording plays without it.
     void require_depth_engine();
 }  // namespace xblick::k4a_node

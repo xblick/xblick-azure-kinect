@@ -57,11 +57,15 @@ jobs:
       - name: Wheel (tools/build_wheel.sh)
         run: |
           git config --global --add safe.directory '*'
-          node/tools/build_wheel.sh xblick node/dist "$RUNNER_TEMP/k4a-wheel"
+          node/tools/build_wheel.sh xblick node/dist k4a-wheel
       - uses: actions/upload-artifact@v4
         with:
           name: xblick-azure-kinect-wheel
           path: node/dist/*.whl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xblick-azure-kinect-lgpl-sources
+          path: k4a-wheel/lgpl-sources/*.tar.gz
 
   # The wheel in a fresh environment, with Durchblick and NVIDIA's packages from PyPI (its dependencies), without
   # LD_LIBRARY_PATH. The runner has no GPU and no driver; libegl1 and libudev1 are what the README asks a PC for.

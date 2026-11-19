@@ -77,16 +77,57 @@ def test_without_nvidia_packages_stops(tmp_path):
     if libs.is_dir():
         shutil.copytree(libs, tmp_path / libs.name, symlinks=True)
     line = error_line(run(program=str(tmp_path / package.name / "bin" / "xblick-azure-kinect")))
-    assert line.startswith("xblick-azure-kinect: --cuda-device 0: cannot load nvJPEG and NPP ("), line
-    assert "nvidia-nvjpeg-cu12, nvidia-npp-cu12 and nvidia-cuda-runtime-cu12 must be installed" in line, line
+    assert line.startswith("xblick-azure-kinect: --cuda-device 0: cannot load nvJPEG and the CUDA runtime ("), line
+    assert "nvidia-nvjpeg-cu12 and nvidia-cuda-runtime-cu12 must be installed" in line, line
 
 
 def test_missing_depth_engine_names_the_setup_command(tmp_path):
+    """A camera and --sdk-depth-to-color need the depth engine; the node stops before its session."""
     engine = tmp_path / "cache" / "azure-kinect" / f"depth-engine-{sdk.K4A_PACKAGE_VERSION}" / sdk.ENGINE
-    line = error_line(run("--cuda-device", "none", "--playback", str(tmp_path / "missing.mkv"),
-                          env={"XBLICK_HOME": str(tmp_path)}))
-    assert line == (f"xblick-azure-kinect: the depth engine of Microsoft's Azure Kinect Sensor SDK is missing "
-                    f"({engine}): run xblick-azure-kinect-setup once, which downloads it from Microsoft"), line
+    expected = (f"xblick-azure-kinect: the depth engine of Microsoft's Azure Kinect Sensor SDK is missing ({engine}): "
+                "run xblick-azure-kinect-setup once, which downloads it from Microsoft")
+    for args in (["--cuda-device", "none"],
+                 ["--cuda-device", "none", "--playback", str(tmp_path / "missing.mkv"), "--sdk-depth-to-color"]):
+        line = error_line(run(*args, env={"XBLICK_HOME": str(tmp_path)}))
+        assert line == expected, (args, line)
+
+
+def test_playback_needs_no_depth_engine(tmp_path):
+    """A recording plays without the engine (as in the source build): with a missing file the node gets as far as
+    opening it, and libk4a's three lines about the engine at the end stay out."""
+    result = run("--cuda-device", "none", "--listen", "tcp/127.0.0.1:0", "--playback", str(tmp_path / "missing.mkv"),
+                 env={"XBLICK_HOME": str(tmp_path)})
+    line = error_line(result)
+    assert "depth engine" not in line and "missing.mkv" in line, line
+    assert "depthengine" not in result.stdout, result.stdout
+
+
+def test_setup_without_acceptance_stops(tmp_path):
+    """Without a terminal, the option or the variable the setup command downloads nothing and names both ways."""
+    env = {key: value for key, value in os.environ.items() if key != sdk.ACCEPT_VARIABLE}
+    result = subprocess.run(["xblick-azure-kinect-setup"], capture_output=True, text=True, timeout=30,
+                            stdin=subprocess.DEVNULL, env=dict(env, XBLICK_HOME=str(tmp_path)))
+    assert result.returncode == 1 and result.stdout == "", (result.stdout, result.stderr)
+    line = result.stderr.strip()
+    assert "\n" not in line and sdk.ACCEPT_OPTION in line and f"{sdk.ACCEPT_VARIABLE}=yes" in line, line
+    assert sdk.TERMS_URL in line, line
+    assert not (tmp_path / "cache" / "azure-kinect" / "downloads").exists()
+    result = subprocess.run(["xblick-azure-kinect-setup"], capture_output=True, text=True, timeout=30,
+                            stdin=subprocess.DEVNULL, env=dict(env, XBLICK_HOME=str(tmp_path),
+                                                               **{sdk.ACCEPT_VARIABLE: "no"}))
+    assert result.returncode == 1 and "only with the value yes" in result.stderr, result.stderr
+
+
+def test_acceptance_is_recorded(tmp_path, monkeypatch):
+    """The variable accepts; the record beside the engine names how, the terms and the link; then no question."""
+    target = tmp_path / "depth-engine"
+    target.mkdir()
+    monkeypatch.setenv(sdk.ACCEPT_VARIABLE, "yes")
+    how = sdk.accept(target, option=False, out=io.StringIO())
+    sdk.record_acceptance(target, how)
+    record = (target / sdk.ACCEPTANCE_FILE).read_text()
+    assert f"how: {sdk.ACCEPT_VARIABLE}=yes" in record and sdk.TERMS_URL in record and sdk.PACKAGE in record
+    assert sdk.accepted(target)
 
 
 def fake_package(path: Path, engine: bytes) -> None:

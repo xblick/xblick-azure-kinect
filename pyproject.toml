@@ -6,37 +6,34 @@
 # The wheel for PyPI (manylinux_2_28; the Sensor SDK built from its source; libjpeg and libpng inside):
 # tools/build_wheel.sh. licenses/: NOTICE.
 #
-# nvJPEG, NPP and the CUDA runtime are not in the wheel. They are NVIDIA's pip packages: the build compiles and links
-# the module against the versions below (the oldest this wheel accepts: the CUDA 12.0 runtime, nvJPEG and NPP of CUDA
-# 12.8, the first with Blackwell GPUs), and the installed wheel depends on them (project.dependencies), so that pip and
-# uv put them into the same site-packages, where the module finds them (CMakeLists.txt). The depth engine of
-# Microsoft's Sensor SDK is not in the wheel either: xblick-azure-kinect-setup downloads it.
+# nvJPEG and the CUDA runtime are not in the wheel. They are NVIDIA's pip packages: the build links the module
+# against nvJPEG of CUDA 12.8 (the oldest this wheel accepts, the first with Blackwell GPUs) and compiles its remap
+# kernel (src/gpu_rectify.cu) with nvcc 12.8 from NVIDIA's redistributable archives (tools/build_wheel.sh), and the
+# installed wheel depends on the packages (project.dependencies), so that pip and uv put them into the same
+# site-packages, where the module finds them (CMakeLists.txt). The depth engine of Microsoft's Sensor SDK is not in
+# the wheel either: xblick-azure-kinect-setup downloads it.
 [build-system]
 requires = [
     "scikit-build-core>=0.11",
     "nvidia-nvjpeg-cu12==12.3.5.57",
-    "nvidia-npp-cu12==12.3.3.65",
-    "nvidia-cuda-runtime-cu12==12.0.107",
-    "nvidia-cuda-nvcc-cu12==12.0.76",  # crt/host_defines.h of the same CUDA 12.0, which cuda_runtime_api.h includes
 ]
 build-backend = "scikit_build_core.build"
 
 [project]
 name = "xblick-azure-kinect"
 dynamic = ["version"]  # from CMakeLists.txt, project(VERSION)
-description = "An Azure Kinect's colour, depth, IR and IMU as Durchblick streams. After the install, run xblick-azure-kinect-setup once: it fetches Microsoft's depth engine under Microsoft's terms."
+description = "An Azure Kinect's colour, depth, IR and IMU as Durchblick streams. After the install, run xblick-azure-kinect-setup once: it fetches Microsoft's depth engine once you accept Microsoft's terms."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE", "licenses/*"]  # licenses/: what the wheel contains of others (NOTICE)
 authors = [{ name = "David Schneider" }]
 requires-python = ">=3.10,<3.14"  # the core's wheels: CPython 3.10 to 3.13
 # xblick: the node's cache directory and the download of the setup command (xblick.paths, xblick.weights).
-# libnvjpeg.so.12, libnppig.so.12, libnppc.so.12 and libcudart.so.12 of the CUDA module (NPP is most of the download);
+# libnvjpeg.so.12 and libcudart.so.12 of the CUDA module (about 9 MB to download);
 # CUDA 12 needs an NVIDIA driver 525 or newer
 dependencies = [
     "xblick>=0.5.14,<0.6",
     "nvidia-nvjpeg-cu12>=12.3.5,<13",
-    "nvidia-npp-cu12>=12.3.3,<13",
     "nvidia-cuda-runtime-cu12>=12.0,<13",
 ]
 keywords = ["xblick", "zenoh", "camera", "azure kinect", "depth camera", "rgbd", "robotics"]

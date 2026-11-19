@@ -27,7 +27,8 @@
 // else 0); no X server is needed (egl_glx.cpp). --cuda-device (colour decoded with nvJPEG, CUDA rings) defaults to 0
 // in builds with XBLICK_K4A_CUDA: cheaper in every case measured with k4a_node_bench (README); none: off.
 // At the start, before the session: with --cuda-device N the NVIDIA driver and GPU N are checked (check_cuda_device,
-// nvjpeg_decoder.hpp), and the wheel's program loads the depth engine from the node's cache directory (wheel.hpp); a
+// nvjpeg_decoder.hpp), and the wheel's program needs the depth engine from the node's cache directory for a camera
+// and for --sdk-depth-to-color, not for a recording otherwise (wheel.hpp); a
 // missing part stops the program with one line that names it.
 // depth_to_color and depth_to_color_rect are computed on the CPU (depth_to_color.hpp); --sdk-depth-to-color: by the
 // SDK's transformation in the depth engine (OpenGL) instead, which waits for the GPU where other programs keep it busy.
@@ -144,7 +145,12 @@ int main(int argc, char** argv)
         }
 #endif
 #ifdef XBLICK_K4A_WHEEL
-        require_depth_engine();
+        // the depth engine where it is used: a camera, and the SDK's transformation; a recording plays without it
+        if (not options.has_value("playback") or
+            (options.flag("sdk-depth-to-color") and not options.flag("no-depth-to-color")))
+        {
+            require_depth_engine();
+        }
 #endif
         // the parameters' services need the session: it opens before they are declared
         std::unique_ptr<CaptureSource> source;  // before the parameters: their writers use its colour controls

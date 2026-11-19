@@ -69,11 +69,14 @@ metadata (xblick_azure_kinect-<version>.dist-info/licenses/licenses/).
   - libebml and libmatroska (GNU Lesser General Public License 2.1):
     licenses/libebml-LICENSE.LGPL, licenses/libmatroska-LICENSE.LGPL
   - spdlog (MIT) with fmt (MIT): licenses/spdlog-LICENSE, licenses/fmt-LICENSE.rst
-  The complete source code of libusb, libebml and libmatroska as built is at the
-  commits that licenses/k4a-sdk-sources.txt names, in their repositories
-  (https://github.com/libusb/libusb, https://github.com/Matroska-Org/libebml,
-  https://github.com/Matroska-Org/libmatroska), and the SDK's build scripts at
-  its commit. libk4a.so.1.4 and libk4arecord.so.1.4 are separate files of the
+  The complete source code of libusb, libebml and libmatroska as built, with
+  the SDK's CMake files that build them, is the archive
+  xblick-azure-kinect-<version>-lgpl-sources.tar.gz attached to each GitHub
+  release of the wheel (https://github.com/xblick/xblick-azure-kinect/releases).
+  It is also at the commits that licenses/k4a-sdk-sources.txt names, in their
+  repositories (https://github.com/libusb/libusb,
+  https://github.com/Matroska-Org/libebml,
+  https://github.com/Matroska-Org/libmatroska). libk4a.so.1.4 and libk4arecord.so.1.4 are separate files of the
   wheel: they can be replaced by a build of a modified version of these
   libraries.
 
@@ -105,5 +108,7 @@ metadata (xblick_azure_kinect-<version>.dist-info/licenses/licenses/).
 
 The wheel does not contain the depth engine (libdepthengine) or any file of
 NVIDIA. Its setup command xblick-azure-kinect-setup downloads Microsoft's
-package on the user's PC; nvJPEG, NPP and the CUDA runtime are NVIDIA's PyPI
-packages, which the wheel depends on.
+package on the user's PC once the user accepts Microsoft's terms; nvJPEG and
+the CUDA runtime are NVIDIA's PyPI packages, which the wheel depends on. The
+CUDA module's kernel is this repository's code (src/gpu_rectify.cu), compiled
+with NVIDIA's nvcc.

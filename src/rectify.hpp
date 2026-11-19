@@ -1,8 +1,8 @@
 // The colour image rectified (<base>/color_rect, as ROS's image_proc does it): without its lens distortion, in the
 // camera that the colour CameraInfo's P describes (the device's calibration: P = K, the same focal length and centre;
 // a calibration file: its own P). One map per calibration gives every rectified pixel the point of the camera's image
-// it shows (OpenCV's initUndistortRectifyMap with R = I); per frame a bilinear remap, on the CPU or on the GPU (NPP).
-// A rectified pixel whose point is not inside the camera's image is black.
+// it shows (OpenCV's initUndistortRectifyMap with R = I); per frame a bilinear remap, on the CPU or on the GPU
+// (gpu_rectify.cu). A rectified pixel whose point is not inside the camera's image is black.
 #pragma once
 
 #include <cstdint>
@@ -41,7 +41,7 @@ namespace xblick::k4a_node
     // 0 (no depth) outside: blending would make up depths between a surface and what is behind it, or a hole.
     void remap_depth16(const RectifyMap& map, const std::uint16_t* src, std::uint16_t* dst);
 
-    // The remap on the GPU with NPP (nppiRemap, bilinear), from and to device memory (gpu_rectify.cpp; in the wheel
+    // The remap on the GPU (bilinear, as NPP's nppiRemap), from and to device memory (gpu_rectify.cu; in the wheel
     // part of its CUDA module, nvjpeg_decoder.hpp).
     class GpuRectifier
     {

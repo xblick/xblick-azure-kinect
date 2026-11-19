@@ -1,5 +1,5 @@
 // The wheel's programs: the CUDA parts from the module libxblick-azure-kinect-cuda.so beside them
-// (xblick_azure_kinect/lib), opened when --cuda-device names a GPU. The module finds nvJPEG, NPP and the CUDA runtime
+// (xblick_azure_kinect/lib), opened when --cuda-device names a GPU. The module finds nvJPEG and the CUDA runtime
 // through its RPATH in NVIDIA's pip packages of the same environment (site-packages/nvidia/*/lib, CMakeLists.txt);
 // without them the programs still run with --cuda-device none. The depth engine from the node's cache directory.
 #include "wheel.hpp"
@@ -57,10 +57,9 @@ namespace xblick::k4a_node
                 {
                     throw std::runtime_error(module.string() + " is missing: reinstall xblick-azure-kinect from a wheel");
                 }
-                throw std::runtime_error("cannot load nvJPEG and NPP (" + error +
-                                         "): the packages nvidia-nvjpeg-cu12, nvidia-npp-cu12 and "
-                                         "nvidia-cuda-runtime-cu12 must be installed in the environment of "
-                                         "xblick-azure-kinect (its dependencies)");
+                throw std::runtime_error("cannot load nvJPEG and the CUDA runtime (" + error +
+                                         "): the packages nvidia-nvjpeg-cu12 and nvidia-cuda-runtime-cu12 must be "
+                                         "installed in the environment of xblick-azure-kinect (its dependencies)");
             }
             Module m;
             m.check = symbol<decltype(m.check)>(handle, module, "xblick_k4a_check_cuda_device");
@@ -124,10 +123,11 @@ namespace xblick::k4a_node
         {
             engine_error = std::string("the depth engine's directory: ") + e.what();
         }
-        // Without the engine the program ends at its start (require_depth_engine) or after --help. libk4a still tries to
-        // load the engine when it is unloaded at the end, and logs three lines on stdout that point at the library
-        // path; the program's own line names the setup command instead. A value the user set is kept.
-        ::setenv("K4A_ENABLE_LOG_TO_STDOUT", "0", 0);
+        // Without the engine, libk4a tries to load it once more when it is unloaded at the program's end and logs three
+        // lines on stdout that point at the library path, also after a playback that never needed it. Set before that
+        // (at exit, before the libraries' destructors), the variable keeps its logger off if nothing started it
+        // before; a value the user set is kept. The program's own line (require_depth_engine) names the setup command.
+        std::atexit([] { ::setenv("K4A_ENABLE_LOG_TO_STDOUT", "0", 0); });
     }
 
     void require_depth_engine()

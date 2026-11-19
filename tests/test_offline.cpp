@@ -904,7 +904,7 @@ namespace
 
     // <base>/color_rect against the SDK's own projection: a rectified pixel (u, v) shows the ray of P's camera through
     // it, which k4a_calibration_3d_to_2d puts at a point of the colour image; the rectified pixel is the colour
-    // image there (bilinear), black where that point is outside. On the CPU, or on the GPU (NPP) with cuda_device.
+    // image there (bilinear), black where that point is outside. On the CPU, or on the GPU (gpu_rectify.cu) with cuda_device.
     void test_color_rect(const CalibrationRecord& record, zenoh::Session& node_session, zenoh::Session& client,
                          const std::string& base, std::optional<int> cuda_device)
     {

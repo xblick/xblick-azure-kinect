@@ -11,8 +11,11 @@
 # network access: the sources of zenoh-c, zenoh-cpp, nlohmann_json and the Azure Kinect Sensor SDK with its git
 # submodules (GitHub, chromium.googlesource.com for libyuv), Rust crates, the pip packages nvidia-cuda-runtime (cuda.h
 # for Durchblick's C++ library), CMake 3.31 (the SDK's glfw submodule needs a CMake before 4) and the build
-# requirements (pyproject.toml: NVIDIA's nvJPEG, NPP and CUDA runtime, for the CUDA module). No GPU, no CUDA toolkit,
-# no camera. <work dir> must not exist or be empty; <out dir> gets the repaired wheel only.
+# requirements (pyproject.toml: NVIDIA's nvJPEG, for the CUDA module), and NVIDIA's redistributable archives of nvcc
+# and the CUDA runtime 12.8 (developer.download.nvidia.com, pinned sha256: nvcc compiles src/gpu_rectify.cu; nothing of
+# them goes into the wheel). No GPU, no installed CUDA toolkit,
+# no camera. <work dir> must not exist or be empty; <out dir> gets the repaired wheel only;
+# <work dir>/lgpl-sources/ gets the source archive of the LGPL libraries in libk4a and libk4arecord (below).
 #
 # 1. zenoh-c from source: its prebuilt release needs glibc 2.34 (GLIBC_2.34 symbols), more than manylinux_2_28 allows.
 # 2. zenoh-cpp's headers, nlohmann_json's headers. 3. Durchblick's C++ library (camera API, static) from
@@ -44,6 +47,12 @@ JSON_VERSION=3.12.0
 JSON_SHA256=42f6e95cad6ec532fd372391373363b62a14af6d771056dbfc86160e6dfff7aa
 K4A_TAG=v1.4.2
 K4A_COMMIT=cd2b3e9894b26fbeebfe34a5cab5b26efab0939a
+# nvcc and the CUDA runtime's headers for the CUDA module (redistrib_12.8.1.json of NVIDIA's redist directory)
+CUDA_REDIST=https://developer.download.nvidia.com/compute/cuda/redist
+CUDA_NVCC=cuda_nvcc/linux-x86_64/cuda_nvcc-linux-x86_64-12.8.93-archive.tar.xz
+CUDA_NVCC_SHA256=9961b3484b6b71314063709a4f9529654f96782ad39e72bf1e00f070db8210d3
+CUDA_CUDART=cuda_cudart/linux-x86_64/cuda_cudart-linux-x86_64-12.8.90-archive.tar.xz
+CUDA_CUDART_SHA256=8d566b5fe745c46842dc16945cf36686227536decd2302c372be86da37faca68
 PLAT=manylinux_2_28_x86_64
 PYTHON=/opt/python/cp312-cp312/bin/python
 GCC9=/opt/rh/gcc-toolset-9/root/usr/bin
@@ -163,6 +172,26 @@ check_licence "$K4A_SRC/extern/libebml/src/LICENSE.LGPL" libebml-LICENSE.LGPL
 check_licence "$K4A_SRC/extern/libmatroska/src/LICENSE.LGPL" libmatroska-LICENSE.LGPL
 check_licence "$K4A_SRC/extern/spdlog/src/LICENSE" spdlog-LICENSE
 check_licence "$K4A_SRC/extern/spdlog/src/include/spdlog/fmt/bundled/LICENSE.rst" fmt-LICENSE.rst
+# libusb, libebml and libmatroska (LGPL 2.1) are linked into libk4a and libk4arecord: their source code at the
+# commits built, as one archive that each release carries beside the wheel (NOTICE)
+version="$(sed -n 's/^project(xblick_azure_kinect VERSION \([0-9.]*\).*/\1/p' "$NODE/CMakeLists.txt")"
+sources="xblick-azure-kinect-$version-lgpl-sources"
+mkdir -p "$WORK/lgpl-sources/$sources"
+for library in libusb libebml libmatroska; do
+  commit="$(git -C "$K4A_SRC/extern/$library/src" rev-parse HEAD)"
+  git -C "$K4A_SRC/extern/$library/src" archive --format=tar --prefix="$sources/$library-$commit/" HEAD |
+    tar xf - -C "$WORK/lgpl-sources"
+done
+cp "$NODE/licenses/k4a-sdk-sources.txt" "$WORK/lgpl-sources/$sources/"
+# how the SDK builds them (its CMake files for the three, MIT): the scripts that control their compilation
+for library in libusb libebml libmatroska; do
+  mkdir -p "$WORK/lgpl-sources/$sources/sdk-build/$library"
+  cp "$K4A_SRC/extern/$library/CMakeLists.txt" "$WORK/lgpl-sources/$sources/sdk-build/$library/"
+done
+cp "$K4A_SRC/LICENSE" "$WORK/lgpl-sources/$sources/sdk-build/LICENSE"
+tar czf "$WORK/lgpl-sources/$sources.tar.gz" -C "$WORK/lgpl-sources" "$sources"
+rm -r "$WORK/lgpl-sources/$sources"
+echo "   $WORK/lgpl-sources/$sources.tar.gz"
 check_licence "$K4A_SRC/scripts/99-k4a.rules" ../python/xblick_azure_kinect/99-k4a.rules
 # CMake 3.31: glfw (configured with the rest, not built) sets a policy to OLD that CMake 4 refuses. libuvc compiles
 # against the libusb that the SDK links (its own submodule), not against a system libusb. OpenSSL is needed by the
@@ -184,11 +213,24 @@ if readelf -d "$WORK/k4a/lib/libk4a.so.1.4" | grep -q "NEEDED.*\[lib\(ssl\|crypt
   exit 1
 fi
 
+echo "== nvcc and the CUDA runtime 12.8 (NVIDIA's redistributable archives, for the build only)"
+mkdir "$WORK/cuda"
+for archive in "$CUDA_NVCC|$CUDA_NVCC_SHA256" "$CUDA_CUDART|$CUDA_CUDART_SHA256"; do
+  path="${archive%|*}"
+  curl -sSfL -o "$WORK/${path##*/}" "$CUDA_REDIST/$path"
+  echo "${archive#*|}  $WORK/${path##*/}" | sha256sum --check --quiet
+  tar xJf "$WORK/${path##*/}" -C "$WORK/cuda" --strip-components 1
+done
+# nvcc looks for the runtime in lib64, the archives have lib
+ln -s lib "$WORK/cuda/lib64"
+"$WORK/cuda/bin/nvcc" --version | tail -1
+
 echo "== the wheel"
 CMAKE_PREFIX_PATH="$WORK/core-install:$ZENOH:$WORK/json:$WORK/k4a" "$PYTHON" -m pip wheel --no-deps --no-cache-dir \
-  "$NODE" -w "$WORK/wheelhouse" -C build-dir="$WORK/node-build"
+  "$NODE" -w "$WORK/wheelhouse" -C build-dir="$WORK/node-build" -C cmake.define.CUDAToolkit_ROOT="$WORK/cuda" \
+  -C cmake.define.CMAKE_CUDA_COMPILER="$WORK/cuda/bin/nvcc"
 wheel="$(ls "$WORK"/wheelhouse/xblick_azure_kinect-*.whl)"
-excluded=(libnvjpeg.so.12 libnppig.so.12 libnppc.so.12 libcudart.so.12 libEGL.so.1 libudev.so.1)
+excluded=(libnvjpeg.so.12 libcudart.so.12 libEGL.so.1 libudev.so.1)
 auditwheel repair --plat "$PLAT" "${excluded[@]/#/--exclude=}" -w "$WORK/repaired" "$wheel"
 repaired="$(ls "$WORK"/repaired/xblick_azure_kinect-*-py3-none-${PLAT}.whl)"
 auditwheel show "$repaired"
@@ -248,17 +290,23 @@ if grep -E -i "lib(EGL|OpenGL|GLdispatch|GLX|GL|udev)[-.]" <<< "$listing"; then
   exit 1
 fi
 module="$lib/libxblick-azure-kinect-cuda.so"
-for needed in libnvjpeg.so.12 libnppig.so.12 libnppc.so.12 libcudart.so.12; do
+for needed in libnvjpeg.so.12 libcudart.so.12; do
   readelf -d "$module" | grep -q "NEEDED.*\[$needed\]" || { echo "$module does not need $needed" >&2; exit 1; }
 done
-rpath='$ORIGIN/../../nvidia/nvjpeg/lib:$ORIGIN/../../nvidia/npp/lib:$ORIGIN/../../nvidia/cuda_runtime/lib'
+rpath='$ORIGIN/../../nvidia/nvjpeg/lib:$ORIGIN/../../nvidia/cuda_runtime/lib'
 if ! readelf -d "$module" | grep -F "(RPATH)" | grep -q -F "[$rpath]"; then
   readelf -d "$module" | grep -E "RPATH|RUNPATH" >&2 || true
   echo "$module: its RPATH is not $rpath" >&2
   exit 1
 fi
+# the CUDA runtime from libcudart.so.12 (NVIDIA's package), not linked in statically; the remap kernel's own code
+if ! nm -D --undefined-only "$module" | grep -q -w cudaMalloc; then
+  echo "$module does not take the CUDA runtime from libcudart.so.12: the static runtime would put NVIDIA's code into it" >&2
+  exit 1
+fi
+readelf -S "$module" | grep -q "\.nv_fatbin" || { echo "$module has no kernel binaries (.nv_fatbin)" >&2; exit 1; }
 metadata="$(cd "$WORK/check" && cat xblick_azure_kinect-*.dist-info/METADATA)"
-for requirement in "xblick<0.6,>=0.5.14" "nvidia-nvjpeg-cu12<13,>=12.3.5" "nvidia-npp-cu12<13,>=12.3.3" \
+for requirement in "xblick<0.6,>=0.5.14" "nvidia-nvjpeg-cu12<13,>=12.3.5" \
                    "nvidia-cuda-runtime-cu12<13,>=12.0"; do
   if ! grep -q -x "Requires-Dist: $requirement" <<< "$metadata"; then
     grep "^Requires-Dist" <<< "$metadata" >&2 || true

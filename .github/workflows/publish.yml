@@ -7,6 +7,10 @@
 # The upload runs only when the repository variable PYPI_PUBLISHER is "ready", set once PyPI's (pending) publisher
 # exists. Before that, a tag builds and checks the wheel and keeps it as the artifact dist; the job pypi is skipped,
 # so nothing reaches PyPI.
+#
+# On a tag, the job github-release also attaches the wheel and the source archive of the LGPL libraries in libk4a and
+# libk4arecord (xblick-azure-kinect-<version>-lgpl-sources.tar.gz, NOTICE) to the GitHub release of the tag: the
+# release made by hand, or a new one with a short note when there is none yet.
 name: publish
 
 on:
@@ -53,11 +57,15 @@ jobs:
       - name: Wheel (tools/build_wheel.sh)
         run: |
           git config --global --add safe.directory '*'
-          node/tools/build_wheel.sh xblick dist "$RUNNER_TEMP/k4a-wheel"
+          node/tools/build_wheel.sh xblick dist k4a-wheel
       - uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lgpl-sources
+          path: k4a-wheel/lgpl-sources/*.tar.gz
 
   pypi:
     needs: build
@@ -74,3 +82,29 @@ jobs:
           name: dist
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: actions/download-artifact@v4
+        with:
+          name: lgpl-sources
+          path: sources/
+      - name: Attach the wheel and the LGPL sources to the release of the tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" dist/*.whl sources/*.tar.gz --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$GITHUB_REF_NAME" dist/*.whl sources/*.tar.gz --verify-tag --repo "$GITHUB_REPOSITORY" \
+              --title "xblick-azure-kinect ${GITHUB_REF_NAME#v}" --notes "See CHANGELOG.md. The wheel: README.md, Install."
+          fi
