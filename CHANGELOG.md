@@ -15,8 +15,8 @@
     libraries. The wheel's node loads the depth engine from there. For a camera and for `--sdk-depth-to-color` it
     stops with one line naming the setup command when the engine is missing; a recording plays without it.
   - Changed, both builds: `color_rect` on the GPU comes from a CUDA kernel of this project instead of NPP. Its
-    pixels are NPP's, bit for bit (docs/design.md). CUDA builds need `nvcc` (`CMAKE_CUDA_COMPILER`) and no longer
-    NPP; `tools/setup.sh` passes `nvcc` of the toolkit.
+    pixels are NPP's, bit for bit (docs/design.md). CUDA builds need the toolkit's `nvcc`, which CMake takes from
+    `CUDAToolkit_ROOT`, and no longer NPP.
   - Changed: Microsoft's licence terms for the Sensor SDK are accepted explicitly before anything of Microsoft's
     packages is downloaded, in `tools/setup.sh` and in `xblick-azure-kinect-setup`: a typed `yes` at the question,
     `--accept-microsoft-license` or `XBLICK_ACCEPT_MICROSOFT_LICENSE=yes`. Without a terminal and without either,

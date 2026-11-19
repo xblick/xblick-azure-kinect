@@ -136,7 +136,7 @@ Replace each `<...>` with the install prefix of that package.
 
 ```bash
 cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH="<xblick>;<zenoh>;<k4a>/usr;<nlohmann_json>" \
-  -DXBLICK_K4A_CUDA=ON -DCUDAToolkit_ROOT=<cuda-12.8> -DCMAKE_CUDA_COMPILER=<cuda-12.8>/bin/nvcc
+  -DXBLICK_K4A_CUDA=ON -DCUDAToolkit_ROOT=<cuda-12.8>
 cmake --build build
 ctest --test-dir build --output-on-failure
 cmake --install build --prefix <xblick_k4a>   # the CMake package xblick_k4a, for other projects
@@ -152,7 +152,7 @@ Build in a directory on a local disk. Do not build on a shared filesystem.
 
 | Option | Default | Effect |
 | --- | --- | --- |
-| `XBLICK_K4A_CUDA` | `OFF` | Decode with nvJPEG and rectify with the node's CUDA kernel on the GPU. Needs `CUDAToolkit_ROOT` and `CMAKE_CUDA_COMPILER`. |
+| `XBLICK_K4A_CUDA` | `OFF` | Decode with nvJPEG and rectify with the node's CUDA kernel on the GPU. Needs `CUDAToolkit_ROOT`, a toolkit with `nvcc`; `CMAKE_CUDA_COMPILER` names another `nvcc`. |
 | `CMAKE_CUDA_ARCHITECTURES` | `all-major` | The GPU architectures of the kernel. |
 
 ## Tests

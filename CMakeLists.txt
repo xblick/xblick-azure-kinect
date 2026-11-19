@@ -1,7 +1,7 @@
 # Azure Kinect cameras as Durchblick streams (README.md).
 #
 #   cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH="<xblick>;<zenoh>;<k4a SDK>;<nlohmann_json>"
-#         [-DXBLICK_K4A_CUDA=ON -DCUDAToolkit_ROOT=<CUDA toolkit> -DCMAKE_CUDA_COMPILER=<CUDA toolkit>/bin/nvcc]
+#         [-DXBLICK_K4A_CUDA=ON -DCUDAToolkit_ROOT=<CUDA toolkit with nvcc and nvJPEG>]
 #
 # Targets: xblick-azure-kinect (the camera node), xblick-azure-kinect-parameters, test_k4a_offline (no camera needed;
 # ctest). Installs the libraries as the CMake package xblick_k4a (xblick_k4a::xblick_k4a), for programs that build on
@@ -44,6 +44,14 @@ if(XBLICK_K4A_CUDA OR SKBUILD)
     set(CMAKE_CUDA_ARCHITECTURES all-major)
   endif()
   set(CMAKE_CUDA_RUNTIME_LIBRARY Shared)
+  # nvcc of the toolkit that CUDAToolkit_ROOT names, unless CMAKE_CUDA_COMPILER names one: the same toolkit for the
+  # kernel as for nvJPEG and the runtime
+  if(NOT CMAKE_CUDA_COMPILER AND NOT DEFINED ENV{CUDACXX} AND DEFINED CUDAToolkit_ROOT)
+    if(NOT EXISTS "${CUDAToolkit_ROOT}/bin/nvcc")
+      message(FATAL_ERROR "CUDAToolkit_ROOT ${CUDAToolkit_ROOT} has no bin/nvcc, which the CUDA build needs")
+    endif()
+    set(CMAKE_CUDA_COMPILER "${CUDAToolkit_ROOT}/bin/nvcc")
+  endif()
   enable_language(CUDA)
   set(CMAKE_CUDA_STANDARD 20)
   set(CMAKE_CUDA_STANDARD_REQUIRED ON)

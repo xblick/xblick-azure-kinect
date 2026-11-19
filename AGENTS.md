@@ -16,7 +16,7 @@ tests): `AGENTS.md` of the core repository (github.com/xblick/xblick). Style of 
 tools/setup.sh [--cuda | --no-gpu] [--cuda-toolkit DIR]
 # By hand. Build on a local disk, never on a shared filesystem. <...> = install prefixes. Options: docs/build.md.
 cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH="<xblick>;<zenoh>;<k4a>/usr;<nlohmann_json>" \
-  -DXBLICK_K4A_CUDA=ON -DCUDAToolkit_ROOT=<cuda-12.8> -DCMAKE_CUDA_COMPILER=<cuda-12.8>/bin/nvcc
+  -DXBLICK_K4A_CUDA=ON -DCUDAToolkit_ROOT=<cuda-12.8>
 cmake --build build
 ctest --test-dir build --output-on-failure   # no LD_LIBRARY_PATH needed with the SDK laid out as Microsoft's package
 cmake --install build --prefix <xblick_k4a>   # the CMake package xblick_k4a (xblick_k4a_DIR)
