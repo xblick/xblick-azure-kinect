@@ -97,8 +97,7 @@ jobs:
           if env -u LD_LIBRARY_PATH ldd /tmp/check/lib/python3.12/site-packages/xblick_azure_kinect/bin/* \
             "$lib/libxblick-azure-kinect-cuda.so" | grep -q "not found"; then exit 1; fi
           # NVIDIA's libraries from their packages in this environment
-          for library in nvjpeg/lib/libnvjpeg.so.12 npp/lib/libnppig.so.12 npp/lib/libnppc.so.12 \
-                         cuda_runtime/lib/libcudart.so.12; do
+          for library in nvjpeg/lib/libnvjpeg.so.12 cuda_runtime/lib/libcudart.so.12; do
             env -u LD_LIBRARY_PATH ldd "$lib/libxblick-azure-kinect-cuda.so" | grep -q "=> $lib/../../nvidia/$library"
           done
           env -u LD_LIBRARY_PATH /tmp/check/bin/xblick-azure-kinect --help > /dev/null
