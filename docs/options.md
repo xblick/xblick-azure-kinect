@@ -54,7 +54,7 @@ The five short options refuse the value `auto`. Give the value, or set the `auto
 
 | Option | Default | Effect |
 | --- | --- | --- |
-| `--cuda-device N\|none` | `0` in builds with `XBLICK_K4A_CUDA` and in the wheel, else `none` | The GPU for nvJPEG decoding, NPP remapping and the CUDA rings. `none` turns the GPU path off. Without the NVIDIA driver or without GPU N, the program stops at its start with one line. |
+| `--cuda-device N\|none` | `0` in builds with `XBLICK_K4A_CUDA` and in the wheel, else `none` | The GPU for nvJPEG decoding, the GPU remap of `color_rect` and the CUDA rings. `none` turns the GPU path off. Without the NVIDIA driver or without GPU N, the program stops at its start with one line. |
 | `--depth-engine-gpu N` | the value of `--cuda-device`, else `0` | The CUDA device on which the depth engine gets its OpenGL context through EGL. |
 | `--sync-publish` | off | Publish all streams in the capture loop, one after the other. By default four threads publish them. |
 

@@ -13,7 +13,7 @@ with CMake, the CMake options and the tests.
 | Azure Kinect Sensor SDK 1.4 (`find_package(k4a)`, `k4arecord`) with the depth engine | everything |
 | nlohmann_json | everything |
 | libjpeg or libjpeg-turbo, libpng (Durchblick needs it), EGL | everything |
-| CUDA toolkit 12 or newer with nvJPEG and NPP | optional: decoding and rectification on the GPU, `xblick-points` |
+| CUDA toolkit 12 or newer with `nvcc` and nvJPEG | optional: decoding and rectification on the GPU, `xblick-points` |
 
 Microsoft ships the depth engine as a binary package under its own licence terms. This repository does not contain
 it. Body tracking is the repository [xblick-k4abt](https://github.com/xblick/xblick-k4abt).
@@ -46,10 +46,19 @@ The script downloads these files. It checks each one against its sha256 and stop
 | `libk4a1.4`, `libk4a1.4-dev`: Sensor SDK with the depth engine | 1.4.1 | packages.microsoft.com, `ubuntu/18.04/prod` | [Microsoft Software License Terms, Azure Kinect Sensor SDK](https://www.nuget.org/packages/Microsoft.Azure.Kinect.Sensor/1.4.1/License) |
 | `99-k4a.rules`, the udev rule | 1.4.2 | github.com/microsoft/Azure-Kinect-Sensor-SDK, tag | MIT |
 
-The script prints the terms' name and link when it starts the download of a file that is not under an open-source
-licence. It unpacks Microsoft's packages with `dpkg-deb -x` and
-does not install them. Microsoft's packages ask for the acceptance of the licence terms only when `dpkg` or `apt`
-installs them.
+Before it downloads anything, the script shows the name and link of Microsoft's terms and where their text will be.
+It downloads nothing of Microsoft's packages until the terms are accepted:
+
+| Way | When |
+| --- | --- |
+| Type `yes` at the question | stdin is a terminal |
+| `--accept-microsoft-license` | scripts, any time |
+| `XBLICK_ACCEPT_MICROSOFT_LICENSE=yes` | scripts, any time; another value stops the script |
+
+Without a terminal and without the option or the variable, the script stops with one line that names both. It
+records the acceptance in `k4a-1.4.1/microsoft-license-accepted.txt` of the cache directory (date, the way, the
+terms, the link) and does not ask again. For NVIDIA's file it prints the terms' name and link when the download
+starts. It unpacks Microsoft's packages with `dpkg-deb -x` and does not install them.
 Microsoft's page on the depth engine
 ([docs/depthengine.md](https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/v1.4.2/docs/depthengine.md)) names
 the extraction from the package as the way to get the depth engine without installing the package.
@@ -63,7 +72,7 @@ What needs root, the script checks and leaves to you:
 | What | Check | When it is missing |
 | --- | --- | --- |
 | Ubuntu packages: `cmake ninja-build g++ curl unzip xz-utils libjpeg-turbo8-dev libpng-dev libegl-dev libgl-dev libgl1 libx11-6 libudev1` | `dpkg-query` | The script stops and prints `sudo apt install` with the missing packages. |
-| A CUDA toolkit, 12 or newer, with nvJPEG and NPP | `<toolkit>/version.json`, `bin/nvcc`, the nvJPEG and NPP files | The script stops and names the package `cuda-toolkit-12-8` of NVIDIA's repository, `--cuda-toolkit DIR` and `--no-gpu`. |
+| A CUDA toolkit, 12 or newer, with `nvcc` and nvJPEG | `<toolkit>/version.json`, `bin/nvcc`, the nvJPEG files | The script stops and names the package `cuda-toolkit-12-8` of NVIDIA's repository, `--cuda-toolkit DIR` and `--no-gpu`. |
 | The udev rule for the camera | a rule for the device `045e:097c` in `/etc/udev/rules.d` or `/lib/udev/rules.d` | The script prints the commands that copy the rule there and goes on. |
 
 | Option | Effect |
@@ -72,6 +81,7 @@ What needs root, the script checks and leaves to you:
 | `--cuda` | The script always builds the CUDA parts. |
 | `--no-gpu` | The script builds without CUDA. The depth engine still needs an NVIDIA GPU with EGL at run time. |
 | `--cuda-toolkit DIR` | The CUDA toolkit, 12 or newer. The default is `/usr/local/cuda`. |
+| `--accept-microsoft-license` | Accept Microsoft's terms for the Sensor SDK without the question. |
 
 With the CUDA parts, the script builds Durchblick with its point cloud node and takes `cuda.h` from the toolkit.
 Without them, it takes `cuda.h` from NVIDIA's package `nvidia-cuda-runtime`, as Durchblick's own CI does.
@@ -91,7 +101,7 @@ script's header lists the packages that the image needs. It needs no GPU, no CUD
 | `xblick_azure_kinect/bin/`: `xblick-azure-kinect`, `xblick-azure-kinect-parameters` | this repository (`CMakeLists.txt`, `SKBUILD`), with the same options as a CUDA build |
 | `xblick_azure_kinect/lib/libk4a.so.1.4`, `libk4arecord.so.1.4` | the Sensor SDK's source, tag `v1.4.2` with its submodules, built with GCC 9 and CMake 3.31 |
 | `xblick_azure_kinect/lib/libzenohc.so` | zenoh-c 1.10.1, source |
-| `xblick_azure_kinect/lib/libxblick-azure-kinect-cuda.so` | `src/nvjpeg_decoder.cpp`, `src/gpu_rectify.cpp`, against NVIDIA's pip packages |
+| `xblick_azure_kinect/lib/libxblick-azure-kinect-cuda.so` | `src/nvjpeg_decoder.cpp` against NVIDIA's nvJPEG package, `src/gpu_rectify.cu` with `nvcc` 12.8 from NVIDIA's redistributable archives (pinned sha256, build only) |
 | `xblick_azure_kinect.libs/` | libjpeg and libpng of the image, added by `auditwheel` |
 
 The wheel does not contain the depth engine, NVIDIA's libraries, `libEGL` or `libudev`. The script stops if one of
@@ -101,14 +111,20 @@ submodules are at other commits than `licenses/k4a-sdk-sources.txt` names.
 | Dependency of the installed wheel | Provides |
 | --- | --- |
 | `xblick` 0.5.14 or a later 0.5 | the cache directory and the download of `xblick-azure-kinect-setup`, `xblick router` |
-| `nvidia-nvjpeg-cu12`, `nvidia-npp-cu12` (12.8 or a later 12), `nvidia-cuda-runtime-cu12` | the CUDA module's libraries |
+| `nvidia-nvjpeg-cu12` (12.8 or a later 12), `nvidia-cuda-runtime-cu12` | the CUDA module's libraries |
 
 `xblick-azure-kinect-setup` takes the same file of Microsoft as the setup script, `libk4a1.4_1.4.1_amd64.deb`, into
-the same `downloads/` directory. It unpacks only the depth engine and Microsoft's licence text, into
-`depth-engine-1.4.1/` of the cache directory, and checks the engine's sha256.
+the same `downloads/` directory, once Microsoft's terms are accepted in the same three ways (the option has the same
+name). It unpacks only the depth engine and Microsoft's licence text, into `depth-engine-1.4.1/` of the cache
+directory, checks the engine's sha256 and records the acceptance there.
 
-`tests/test_wheel.py` checks an installed wheel: `--help`, and the stop with one line without a GPU, without
-NVIDIA's packages and without the depth engine.
+`tools/build_wheel.sh` also writes the source archive `xblick-azure-kinect-<version>-lgpl-sources.tar.gz` of libusb,
+libebml and libmatroska at the commits it builds, with the SDK's CMake files for them. The workflow `publish.yml`
+attaches the wheel and this archive to the GitHub release of a tag.
+
+`tests/test_wheel.py` checks an installed wheel: `--help`; the stop with one line without a GPU, without NVIDIA's
+packages, and without the depth engine for a camera or `--sdk-depth-to-color`; playback without the engine; the setup
+command without the acceptance.
 
 ```bash
 python -m pytest tests/test_wheel.py   # with the Python of the environment that has the wheel
@@ -120,7 +136,7 @@ Replace each `<...>` with the install prefix of that package.
 
 ```bash
 cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH="<xblick>;<zenoh>;<k4a>/usr;<nlohmann_json>" \
-  -DXBLICK_K4A_CUDA=ON -DCUDAToolkit_ROOT=<cuda-12.8>
+  -DXBLICK_K4A_CUDA=ON -DCUDAToolkit_ROOT=<cuda-12.8> -DCMAKE_CUDA_COMPILER=<cuda-12.8>/bin/nvcc
 cmake --build build
 ctest --test-dir build --output-on-failure
 cmake --install build --prefix <xblick_k4a>   # the CMake package xblick_k4a, for other projects
@@ -136,7 +152,8 @@ Build in a directory on a local disk. Do not build on a shared filesystem.
 
 | Option | Default | Effect |
 | --- | --- | --- |
-| `XBLICK_K4A_CUDA` | `OFF` | Decode with nvJPEG and rectify with NPP on the GPU. Needs `CUDAToolkit_ROOT`. |
+| `XBLICK_K4A_CUDA` | `OFF` | Decode with nvJPEG and rectify with the node's CUDA kernel on the GPU. Needs `CUDAToolkit_ROOT` and `CMAKE_CUDA_COMPILER`. |
+| `CMAKE_CUDA_ARCHITECTURES` | `all-major` | The GPU architectures of the kernel. |
 
 ## Tests
 
@@ -156,3 +173,4 @@ created a CUDA ring cannot open it.
 | `tools/k4a_node_bench.cpp` | The cost per capture with subscribers. |
 | `tools/k4a_depth_to_color_check.cpp` | Compares a running node's `depth_to_color` with the SDK's transformation. |
 | `tools/k4a_depth_to_color_mirror.cpp` | Publishes the other method's `depth_to_color` below another base. |
+| `tools/remap_npp_check.cpp` | Compares the GPU remap of `color_rect` with NPP's, pixel for pixel; `--time` per frame. Built where the toolkit has NPP. |

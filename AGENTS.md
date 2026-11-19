@@ -16,7 +16,7 @@ tests): `AGENTS.md` of the core repository (github.com/xblick/xblick). Style of 
 tools/setup.sh [--cuda | --no-gpu] [--cuda-toolkit DIR]
 # By hand. Build on a local disk, never on a shared filesystem. <...> = install prefixes. Options: docs/build.md.
 cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH="<xblick>;<zenoh>;<k4a>/usr;<nlohmann_json>" \
-  -DXBLICK_K4A_CUDA=ON -DCUDAToolkit_ROOT=<cuda-12.8>
+  -DXBLICK_K4A_CUDA=ON -DCUDAToolkit_ROOT=<cuda-12.8> -DCMAKE_CUDA_COMPILER=<cuda-12.8>/bin/nvcc
 cmake --build build
 ctest --test-dir build --output-on-failure   # no LD_LIBRARY_PATH needed with the SDK laid out as Microsoft's package
 cmake --install build --prefix <xblick_k4a>   # the CMake package xblick_k4a (xblick_k4a_DIR)
@@ -49,8 +49,12 @@ Durations: not recorded. Give `ctest` a timeout.
   the Sensor SDK's source; `xblick-azure-kinect-setup` fetches the depth engine on the user's PC. Its options and
   behaviour are those of a CUDA build; what differs is in `src/wheel.cpp` only.
 - `tools/setup.sh` pins every download (file, URL, sha256 in `pins`). A new version needs its sha256 and the table
-  in docs/build.md. No sudo in it: what needs root it checks and prints. Microsoft's and NVIDIA's binaries: print the
-  terms' name and link when the download starts (no accept flag).
+  in docs/build.md. No sudo in it: what needs root it checks and prints. Microsoft's packages: nothing downloaded before
+  the terms are accepted (typed yes, `--accept-microsoft-license`, `XBLICK_ACCEPT_MICROSOFT_LICENSE=yes`; recorded
+  beside the unpacked package), in setup.sh and in `xblick-azure-kinect-setup` alike. NVIDIA's files: print the
+  terms' name and link when the download starts.
+- `src/gpu_rectify.cu` gives NPP's `nppiRemap` pixels bit for bit. After any change of it: `k4a_remap_npp_check`
+  (CUDA build with NPP in the toolkit) must report 0 differing pixels, and `--time` on an idle GPU no slower frame.
 - A capture failure ends the program.
 - The calibration record has version 2. Camera nodes and trackers of another version refuse each other. xblick-k4abt
   reads it with a copy of `src/calibration.*`: a change of the record needs the same change there.
@@ -69,6 +73,7 @@ Durations: not recorded. Give `ctest` a timeout.
 | NFS | Do not build or write large outputs on NFS. | Build and write large outputs on a local disk. |
 | Wheel beside NVIDIA's packages elsewhere | The node stops: "cannot load nvJPEG and NPP". | The CUDA module's RPATH names `../../nvidia/*/lib` of its own `site-packages`. pip `--user` beside system packages, `--system-site-packages` and uv `--link-mode symlink` break that. |
 | Sensor SDK with a new compiler or CMake 4 | `-Werror` failures; glfw's policy error. | `tools/build_wheel.sh` builds it with GCC 9 (gcc-toolset-9) and CMake 3.31. |
+| Static CUDA runtime | CMake's CUDA language links `cudart_static` by default: NVIDIA's code in the wheel. | `CMAKE_CUDA_RUNTIME_LIBRARY Shared`; `tools/build_wheel.sh` checks the module takes `cudaMalloc` from `libcudart.so.12`. |
 
 ## Layout
 
@@ -80,7 +85,7 @@ Durations: not recorded. Give `ctest` a timeout.
 | `src/depth_to_color.*` | `depth_to_color(_rect)` on the CPU (SDK's transformation only with `--sdk-depth-to-color`) |
 | `src/jpeg.*`, `nvjpeg_decoder.*` | MJPEG handling, nvJPEG decoding |
 | `src/egl_glx.cpp` | EGL stand-in for the depth engine's Xlib/GLX |
-| `src/gpu_rectify.cpp`, `cuda_module.hpp`, `wheel.*` | `color_rect` on the GPU (NPP); the wheel's CUDA module and depth engine |
+| `src/gpu_rectify.cu`, `cuda_module.hpp`, `wheel.*` | `color_rect` on the GPU (own kernel, NPP's pixels); the wheel's CUDA module and depth engine |
 | `python/xblick_azure_kinect/`, `pyproject.toml` | the wheel's commands, `sdk.py`: `xblick-azure-kinect-setup` |
 | `tests/`, `tests/data/k4a_test_calibration.json` | `offline`, `parameters` tests |
 | `tools/` | `setup.sh`, `build_wheel.sh`, benchmark, `depth_to_color` check and mirror, `check_references.sh` |

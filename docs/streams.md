@@ -126,7 +126,8 @@ With the calibration of the device, P equals K, so the focal length and the cent
 has its own P. `camera_calibration` sets that P from its scaling parameter alpha.
 
 The node computes the map once at the start. Per frame it decodes the colour image once for `color` and `color_rect`.
-It then remaps the image with NPP's `nppiRemap` on the GPU when `--cuda-device` names a GPU, and on the CPU otherwise.
+It then remaps the image on the GPU with its own CUDA kernel when `--cuda-device` names a GPU, and on the CPU otherwise.
+The kernel gives the pixels of NPP's `nppiRemap`, which the node used up to 0.4.0, exactly ([design.md](design.md#rectified-colour-on-the-gpu)).
 
 The `offline` test checks `color_rect` against the SDK's own projection (`k4a_calibration_3d_to_2d`). It uses the
 calibration of the device and calibration files, on the CPU and on the GPU. Every checked pixel is within 1 of the

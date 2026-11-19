@@ -7,15 +7,24 @@
 
   - The wheel holds `xblick-azure-kinect` and `xblick-azure-kinect-parameters` with the same options as a CUDA
     build, `libk4a` and `libk4arecord` built from the Sensor SDK's MIT source (v1.4.2), and a CUDA module that
-    loads nvJPEG, NPP and the CUDA runtime from NVIDIA's PyPI packages, its dependencies. It contains no depth
-    engine and no NVIDIA file. `tools/build_wheel.sh` builds it in manylinux_2_28; the CI builds and checks it.
+    loads nvJPEG and the CUDA runtime from NVIDIA's PyPI packages, its dependencies. It contains no depth engine and
+    no NVIDIA file. `tools/build_wheel.sh` builds it in manylinux_2_28; the CI builds and checks it. Each GitHub
+    release carries the wheel and the source code of the LGPL libraries in its `libk4a` (`publish.yml`).
   - `xblick-azure-kinect-setup` downloads Microsoft's package `libk4a1.4` 1.4.1 (pinned sha256), unpacks the depth
     engine into the node's cache directory and prints the `sudo` commands for the udev rule and missing system
-    libraries. The wheel's node loads the depth engine from there at its start and stops with one line naming the
-    setup command when it is missing.
-  - Both builds: with `--cuda-device N`, the node checks the driver and the GPU before it opens its session and
-    stops with one line that names what is missing and `--cuda-device none`. Before, the error came from the first
-    CUDA call and said "CUDA driver version is insufficient" also when there was no driver.
+    libraries. The wheel's node loads the depth engine from there. For a camera and for `--sdk-depth-to-color` it
+    stops with one line naming the setup command when the engine is missing; a recording plays without it.
+  - Changed, both builds: `color_rect` on the GPU comes from a CUDA kernel of this project instead of NPP. Its
+    pixels are NPP's, bit for bit (docs/design.md). CUDA builds need `nvcc` (`CMAKE_CUDA_COMPILER`) and no longer
+    NPP; `tools/setup.sh` passes `nvcc` of the toolkit.
+  - Changed: Microsoft's licence terms for the Sensor SDK are accepted explicitly before anything of Microsoft's
+    packages is downloaded, in `tools/setup.sh` and in `xblick-azure-kinect-setup`: a typed `yes` at the question,
+    `--accept-microsoft-license` or `XBLICK_ACCEPT_MICROSOFT_LICENSE=yes`. Without a terminal and without either,
+    both stop with one line. The acceptance is recorded beside the unpacked package and asked once. Scripts that run
+    `tools/setup.sh` without a terminal, also on a PC where it ran before, need the option or the variable now.
+  - Changed, both builds: with `--cuda-device N`, the node checks the driver and the GPU before it opens its session
+    and stops with one line that names what is missing and `--cuda-device none`. Before, the error came from the
+    first CUDA call and said "CUDA driver version is insufficient" also when there was no driver.
 
 * **0.4.0** Body tracking moved to the repository [xblick-k4abt](https://github.com/xblick/xblick-k4abt), which
   carries the history of its files and continues as xblick-k4abt 0.4.0. This repository builds the camera node, the

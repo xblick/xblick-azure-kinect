@@ -74,6 +74,16 @@ Measured on 2026-10-28 in the `offline` test at 720P over 60 frames, on an AMD E
 | Remap and publish `color_rect` | 3.2-3.7 ms | 0.6-0.7 ms |
 | The whole colour step with decoding | 4.7-5.2 ms | 1.9 ms |
 
+Since 0.4.1 the GPU remap is the node's own kernel (design.md, Rectified colour on the GPU). Its time per frame against
+NPP's `nppiRemap`, measured on 2026-11-19 with `k4a_remap_npp_check --time` (a lens map, 20 x 100 frames after 200,
+the median) on an idle RTX PRO 6000 Blackwell (0 % use, 180 MHz before the start), the server's load 7 on 64 cores,
+three times:
+
+| Image | NPP | The kernel |
+| --- | --- | --- |
+| 1280 x 720 | 0.0062 ms | 0.0062 ms |
+| 1920 x 1080 | 0.0104-0.0107 ms | 0.0103 ms |
+
 ## The camera on a busy GPU
 
 Observed on 2026-11-10 on a camera PC where Durchblick's nodes share the GPU under MPS. The camera reached

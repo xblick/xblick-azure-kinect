@@ -44,7 +44,10 @@ installed CMake package. The table lists the decisions that a simplification cou
 | Rectified colour is a separate stream `color_rect` beside `color`. | Each reader chooses, and no reader pays for a stream that nobody reads. | The node has a second representation of the colour image. It decodes and remaps per frame while a subscriber exists. |
 | Calibration files have ROS's format, and the node puts them into the SDK's calibration. | ROS's `camera_calibration` writes them. With K and D in the SDK's calibration, `depth_to_color`, body tracking and point clouds agree with the `CameraInfo` of the streams. | A file replaces only the intrinsics, and the extrinsics stay the factory values. The calibration record has version 2, so camera nodes and trackers of the older version refuse each other. |
 | The wheel builds `libk4a` and `libk4arecord` from the Sensor SDK's source and contains no depth engine. `xblick-azure-kinect-setup` fetches the engine from Microsoft on the user's PC. | The source is under MIT. Microsoft's prebuilt libraries and the depth engine are under Microsoft's licence terms, which allow distribution only under conditions that a public wheel cannot meet. | The wheel's CI builds the SDK with GCC 9 and CMake 3.31. The user runs one setup command. |
-| The wheel takes nvJPEG, NPP and the CUDA runtime from NVIDIA's pip packages through a module that the program opens. | The wheel then contains no NVIDIA file. Without the packages, or without a driver, the node stops with one line instead of failing in the loader before `main`. | NPP's package is about 280 MB, most of the download. |
+| The wheel takes nvJPEG and the CUDA runtime from NVIDIA's pip packages through a module that the program opens. | The wheel then contains no NVIDIA file. Without the packages, or without a driver, the node stops with one line instead of failing in the loader before `main`. | The module and its packages have to be in the same `site-packages`. |
+| `color_rect` on the GPU is a CUDA kernel of this project (`src/gpu_rectify.cu`), not NPP's `nppiRemap`. | NPP's pip package is about 280 MB for this one function. The kernel gives NPP's pixels exactly (below, Rectified colour on the GPU). | Builds with the CUDA parts need `nvcc`. A change of the kernel needs the comparison with NPP again (`k4a_remap_npp_check`). |
+| The depth engine is needed only where it works: a camera, and `--sdk-depth-to-color`. | A recording holds depth images already; the engine turns a camera's raw frames into them, and runs the SDK's transformation. | The wheel's node checks for it at its start in these two cases only. |
+| Microsoft's terms are accepted explicitly before anything of Microsoft's packages is downloaded: a typed `yes`, `--accept-microsoft-license` or `XBLICK_ACCEPT_MICROSOFT_LICENSE=yes`. | The packages are under Microsoft's licence terms, and Microsoft's own Debian packages ask for the acceptance at their install. | Scripts without a terminal need the option or the variable. The acceptance is recorded beside the unpacked package. |
 
 ## Libraries at run time
 
@@ -57,10 +60,10 @@ it searches `RUNPATH` after `LD_LIBRARY_PATH`. Modern linkers write `RUNPATH` by
 
 | Library | How the program finds it |
 | --- | --- |
-| The CUDA toolkit | Through the RPATH of the executable. The directory is in it because the node links nvJPEG and NPP. |
+| The CUDA toolkit | Through the RPATH of the executable. The directory is in it because the node links nvJPEG and the CUDA runtime. |
 | The depth engine | `libk4a` opens it by name. It finds it through its own `RUNPATH` `$ORIGIN/libk4a1.4`, where Microsoft's package puts it. A depth engine in another directory has to be on `LD_LIBRARY_PATH`. |
-| nvJPEG, NPP, the CUDA runtime (wheel) | The programs link none of them. They open the module `libxblick-azure-kinect-cuda.so` from `../lib` when `--cuda-device` names a GPU. The module finds NVIDIA's libraries through its `DT_RPATH` in NVIDIA's pip packages of the same `site-packages` (`nvidia/{nvjpeg,npp,cuda_runtime}/lib`). |
-| The depth engine (wheel) | The program opens it at its start by its path in the node's cache directory, `depth-engine-1.4.1/libdepthengine.so.2.0`, where `xblick-azure-kinect-setup` puts it. `libk4a` asks for it by its soname later and gets the loaded one. |
+| nvJPEG, the CUDA runtime (wheel) | The programs link none of them. They open the module `libxblick-azure-kinect-cuda.so` from `../lib` when `--cuda-device` names a GPU. The module finds NVIDIA's libraries through its `DT_RPATH` in NVIDIA's pip packages of the same `site-packages` (`nvidia/{nvjpeg,cuda_runtime}/lib`). |
+| The depth engine (wheel) | The program opens it, if it is there, first thing at its start by its path in the node's cache directory, `depth-engine-1.4.1/libdepthengine.so.2.0`, where `xblick-azure-kinect-setup` puts it. `libk4a` asks for it by its soname later and gets the loaded one. |
 
 Installed programs keep these directories, because the project sets `CMAKE_INSTALL_RPATH_USE_LINK_PATH`. They find
 this project's own libraries in `../lib`. Without that setting CMake drops the directories at install.
@@ -167,6 +170,25 @@ into such a frame before it passes the frame on or decodes it. The status line c
 Retail devices use the Brown-Conrady model, which is OpenCV's rational model. We checked this against the SDK's
 `intrinsic_transformation.c`. Early internal devices use the model Rational 6KT, which has other tangential terms.
 The node refuses it.
+
+### Rectified colour on the GPU
+
+Up to 0.4.0 the node remapped `color_rect` on the GPU with NPP's `nppiRemap_8u_C3R_Ctx` (bilinear). Since 0.4.1 a
+kernel of this project does it (`src/gpu_rectify.cu`), in the CUDA build and in the wheel alike. It follows NPP's rules,
+which `tools/remap_npp_check.cpp` found and checks:
+
+- A pixel is written when its point has `-0.5 <= x < width` and `-0.5 <= y < height`. Other pixels stay black.
+- The point is clamped to the image, and so are its right and lower neighbours.
+- Each channel is `top (1 - fy) + bottom fy` with `top = p00 (1 - fx) + p10 fx`, in float, rounded by `floor(v + 0.5)`.
+  The order of the operations decides the last bit.
+
+`k4a_remap_npp_check` compares both on 40 image and map pairs at 720P and 1080P: gradients over the full range,
+noise, a 1-pixel checkerboard, 8-pixel edges; a lens map, points anywhere, every fraction, steps of 1/256, and the
+borders. All 59,904,000 pixels are the same, and so is the set of written pixels. `k4a_remap_npp_check --time`
+measures both per frame. [performance.md](performance.md) has the result.
+
+The kernel is built for each major GPU architecture of the toolkit (`all-major`). With CUDA 12 these are 5.0 (Maxwell)
+to 12.0 (Blackwell), and the PTX of the newest for later GPUs. A GPU runs the binary of its major version.
 
 ### Stalls
 

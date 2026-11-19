@@ -14,7 +14,8 @@ The node produces each representation of a stream only while a subscriber asks f
 runs on a headless camera PC.
 
 Installed from its Python wheel, the node needs one setup command after the install, `xblick-azure-kinect-setup`. It
-downloads Microsoft's depth engine, which is under Microsoft's licence terms and not part of the wheel
+downloads Microsoft's depth engine, which is under Microsoft's licence terms and not part of the wheel, once you accept
+those terms
 ([Optional: the Python wheel](https://github.com/xblick/xblick-azure-kinect#optional-the-python-wheel)).
 
 ## What it publishes
@@ -50,7 +51,7 @@ clouds.
 | Azure Kinect Sensor SDK 1.4 with `k4arecord` and the depth engine | everything |
 | nlohmann_json, libjpeg or libjpeg-turbo, libpng | everything |
 | NVIDIA GPU and driver with EGL, GLVND's `libGL` and `libX11` | the depth engine without an X server |
-| CUDA toolkit 12 or newer with nvJPEG and NPP | optional: colour decoding on the GPU, CUDA rings, `xblick-points` |
+| CUDA toolkit 12 or newer with `nvcc` and nvJPEG | optional: colour decoding and rectification on the GPU, CUDA rings, `xblick-points` |
 
 Every program connects to the Zenoh router of its PC (`zenohd` on port 7447). Durchblick's
 [sessions page](https://github.com/xblick/xblick/blob/main/docs/concepts/sessions.md) explains
@@ -67,6 +68,10 @@ cd xblick-azure-kinect
 tools/setup.sh
 ```
 
+- The script shows the name and link of Microsoft's licence terms for the Sensor SDK and downloads nothing of it
+  before you accept them: type `yes` when it asks, or pass `--accept-microsoft-license`, or set
+  `XBLICK_ACCEPT_MICROSOFT_LICENSE=yes`. Without a terminal and without either, it stops. It records the acceptance
+  and does not ask again.
 - If Ubuntu packages are missing, the script stops and prints the `sudo apt install` command for them.
 - If the udev rule for the camera is missing, the script prints the commands that install it and goes on. Without
   the rule, only root can open the camera.
@@ -77,39 +82,43 @@ tools/setup.sh
 
 The script keeps the prerequisites in Durchblick's cache directory, by default `~/.cache/xblick/azure-kinect`.
 Every download has a pinned version and a sha256 checksum. Microsoft's Sensor SDK comes from Microsoft's package
-repository and is under Microsoft's licence terms. The script prints the name of the terms and their link when it
-starts that download.
+repository and is under Microsoft's licence terms.
 [docs/build.md](docs/build.md) lists every download with its source and terms, the manual build with CMake and what
 each test checks.
 
 ### Optional: the Python wheel
 
 The wheel `xblick-azure-kinect` holds the two programs, built, with the libraries that they need. It needs no
-compiler and no CUDA toolkit. Install a wheel file, built by `tools/build_wheel.sh` or by the CI (artifact
-`xblick-azure-kinect-wheel`), with `uv` or `pip`:
+compiler and no CUDA toolkit. Each [release](https://github.com/xblick/xblick-azure-kinect/releases) carries it.
+Install it with `uv` or `pip`:
 
 ```bash
-uv tool install --with-executables-from xblick ./xblick_azure_kinect-0.4.1-py3-none-manylinux_2_28_x86_64.whl
-xblick-azure-kinect-setup     # once per PC: the depth engine from Microsoft, and what needs sudo
+uv tool install --with-executables-from xblick \
+  https://github.com/xblick/xblick-azure-kinect/releases/download/v0.4.1/xblick_azure_kinect-0.4.1-py3-none-manylinux_2_28_x86_64.whl
+xblick-azure-kinect-setup     # once per PC: accept Microsoft's terms, get the depth engine, see what needs sudo
 xblick router &               # once per PC, unless a router runs already
 xblick-azure-kinect
 ```
 
-- `xblick-azure-kinect-setup` downloads Microsoft's package `libk4a1.4` 1.4.1 with the pinned sha256 that
-  `tools/setup.sh` uses, prints the name and link of Microsoft's terms, and unpacks the depth engine into
-  `~/.cache/xblick/azure-kinect/depth-engine-1.4.1/`. The node loads it from there at its start. Without it, the node
-  stops and names the setup command. `XBLICK_HOME` moves the directory, as for every node.
+- `xblick-azure-kinect-setup` shows the name and link of Microsoft's licence terms and downloads nothing before you
+  accept them: type `yes` when it asks, or pass `--accept-microsoft-license`, or set
+  `XBLICK_ACCEPT_MICROSOFT_LICENSE=yes`. Without a terminal and without either, it stops. Then it downloads
+  Microsoft's package `libk4a1.4` 1.4.1 with the pinned sha256 that `tools/setup.sh` uses and unpacks the depth
+  engine into `~/.cache/xblick/azure-kinect/depth-engine-1.4.1/`, with the terms and the record of the acceptance.
+  `XBLICK_HOME` moves the directory, as for every node.
+- The node needs the depth engine for a camera and for `--sdk-depth-to-color`. Without it, the node stops there and
+  names the setup command. A recording plays without it.
 - The setup command prints the `sudo` commands for what is missing: the udev rule for the camera and the system
   libraries `libgl1`, `libx11-6`, `libegl1` and `libudev1`.
 - The wheel needs Linux on x86-64 with glibc 2.28 or newer, Python 3.10 to 3.13, and an NVIDIA GPU with its driver,
-  525 or newer, for EGL and CUDA 12. NVIDIA's nvJPEG, NPP and CUDA runtime come from PyPI as dependencies of the
-  wheel, about 290 MB to download, most of it NPP.
+  525 or newer, for EGL and CUDA 12. NVIDIA's nvJPEG and CUDA runtime come from PyPI as dependencies of the wheel,
+  about 9 MB to download.
 - `--cuda-device 0` is the default, as in a CUDA build. Without a usable GPU, the node stops with one line;
   `--cuda-device none` decodes the colour on the CPU.
 - The wheel contains no SDK tools such as `k4arecorder`, no `xblick-points` and not the CMake package `xblick_k4a`.
   These come with `tools/setup.sh`.
-- `pip install ./xblick_azure_kinect-<version>-py3-none-manylinux_2_28_x86_64.whl` in a venv installs the same
-  commands. `xblick` comes with it as a dependency.
+- `pip install <the same URL>` in a venv installs the same commands. `xblick` comes with it as a dependency.
+- Each release also carries the source code of the LGPL libraries in the wheel's `libk4a` (NOTICE).
 
 ## Run
 
