@@ -88,13 +88,13 @@ each test checks.
 
 ### Optional: the Python wheel
 
-The wheel `xblick-azure-kinect` holds the two programs, built, with the libraries that they need. It needs no
+compiler and no CUDA toolkit. It is on PyPI, and each [release](https://github.com/xblick/xblick-azure-kinect/releases)
+carries it as a file.
 compiler and no CUDA toolkit. Each [release](https://github.com/xblick/xblick-azure-kinect/releases) carries it.
 Install it with `uv` or `pip`:
 
 ```bash
-uv tool install --with-executables-from xblick \
-  https://github.com/xblick/xblick-azure-kinect/releases/download/v0.4.1/xblick_azure_kinect-0.4.1-py3-none-manylinux_2_28_x86_64.whl
+uv tool install --with-executables-from xblick xblick-azure-kinect
 xblick-azure-kinect-setup     # once per PC: accept Microsoft's terms, get the depth engine, see what needs sudo
 xblick router &               # once per PC, unless a router runs already
 xblick-azure-kinect
