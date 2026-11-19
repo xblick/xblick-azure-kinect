@@ -1,7 +1,7 @@
 # Build and test xblick-azure-kinect
 
-This page lists the dependencies, what `tools/setup.sh` installs and from where, the manual build with CMake, the
-CMake options and the tests.
+This page lists the dependencies, what `tools/setup.sh` installs and from where, the Python wheel, the manual build
+with CMake, the CMake options and the tests.
 
 ## Dependencies
 
@@ -79,6 +79,40 @@ Without them, it takes `cuda.h` from NVIDIA's package `nvidia-cuda-runtime`, as 
 A second call does only what changed. Each package directory has a stamp `.setup-done`. The node is configured
 again when the options change, built when a file changed, and tested after each build. The logs of the node's steps
 are `build-setup/.setup-configure.log`, `.setup-build.log` and `.setup-ctest.log`.
+
+## The Python wheel
+
+The wheel `xblick-azure-kinect` is an optional install beside the setup script (README, Install).
+`tools/build_wheel.sh` builds it in the image `quay.io/pypa/manylinux_2_28_x86_64`, as the CI's job `wheel` does. The
+script's header lists the packages that the image needs. It needs no GPU, no CUDA toolkit and no camera.
+
+| Part of the wheel | Built from |
+| --- | --- |
+| `xblick_azure_kinect/bin/`: `xblick-azure-kinect`, `xblick-azure-kinect-parameters` | this repository (`CMakeLists.txt`, `SKBUILD`), with the same options as a CUDA build |
+| `xblick_azure_kinect/lib/libk4a.so.1.4`, `libk4arecord.so.1.4` | the Sensor SDK's source, tag `v1.4.2` with its submodules, built with GCC 9 and CMake 3.31 |
+| `xblick_azure_kinect/lib/libzenohc.so` | zenoh-c 1.10.1, source |
+| `xblick_azure_kinect/lib/libxblick-azure-kinect-cuda.so` | `src/nvjpeg_decoder.cpp`, `src/gpu_rectify.cpp`, against NVIDIA's pip packages |
+| `xblick_azure_kinect.libs/` | libjpeg and libpng of the image, added by `auditwheel` |
+
+The wheel does not contain the depth engine, NVIDIA's libraries, `libEGL` or `libudev`. The script stops if one of
+them gets into the wheel, if a licence file in `licenses/` differs from the one of the build, or if the SDK's
+submodules are at other commits than `licenses/k4a-sdk-sources.txt` names.
+
+| Dependency of the installed wheel | Provides |
+| --- | --- |
+| `xblick` 0.5.14 or a later 0.5 | the cache directory and the download of `xblick-azure-kinect-setup`, `xblick router` |
+| `nvidia-nvjpeg-cu12`, `nvidia-npp-cu12` (12.8 or a later 12), `nvidia-cuda-runtime-cu12` | the CUDA module's libraries |
+
+`xblick-azure-kinect-setup` takes the same file of Microsoft as the setup script, `libk4a1.4_1.4.1_amd64.deb`, into
+the same `downloads/` directory. It unpacks only the depth engine and Microsoft's licence text, into
+`depth-engine-1.4.1/` of the cache directory, and checks the engine's sha256.
+
+`tests/test_wheel.py` checks an installed wheel: `--help`, and the stop with one line without a GPU, without
+NVIDIA's packages and without the depth engine.
+
+```bash
+python -m pytest tests/test_wheel.py   # with the Python of the environment that has the wheel
+```
 
 ## Manual build with CMake
 

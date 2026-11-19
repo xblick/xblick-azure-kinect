@@ -43,6 +43,8 @@ installed CMake package. The table lists the decisions that a simplification cou
 | Durchblick's generic point cloud node computes the point clouds, by default in the depth camera's geometry. The camera node computes none. | The node computes each cloud once on the GPU for every reader, and only while a reader exists. The same node serves every depth camera and uses ROS's `PointCloud2` layout. | A further process runs beside the camera. Durchblick needs `XBLICK_POINTS`, which needs a CUDA toolkit with `nvcc`. A reader on another host gets the whole cloud of 5.9 MB, or it starts its own node there. A cloud in the colour camera's geometry is available with `depth_to_color` as input. |
 | Rectified colour is a separate stream `color_rect` beside `color`. | Each reader chooses, and no reader pays for a stream that nobody reads. | The node has a second representation of the colour image. It decodes and remaps per frame while a subscriber exists. |
 | Calibration files have ROS's format, and the node puts them into the SDK's calibration. | ROS's `camera_calibration` writes them. With K and D in the SDK's calibration, `depth_to_color`, body tracking and point clouds agree with the `CameraInfo` of the streams. | A file replaces only the intrinsics, and the extrinsics stay the factory values. The calibration record has version 2, so camera nodes and trackers of the older version refuse each other. |
+| The wheel builds `libk4a` and `libk4arecord` from the Sensor SDK's source and contains no depth engine. `xblick-azure-kinect-setup` fetches the engine from Microsoft on the user's PC. | The source is under MIT. Microsoft's prebuilt libraries and the depth engine are under Microsoft's licence terms, which allow distribution only under conditions that a public wheel cannot meet. | The wheel's CI builds the SDK with GCC 9 and CMake 3.31. The user runs one setup command. |
+| The wheel takes nvJPEG, NPP and the CUDA runtime from NVIDIA's pip packages through a module that the program opens. | The wheel then contains no NVIDIA file. Without the packages, or without a driver, the node stops with one line instead of failing in the loader before `main`. | NPP's package is about 280 MB, most of the download. |
 
 ## Libraries at run time
 
@@ -57,6 +59,8 @@ it searches `RUNPATH` after `LD_LIBRARY_PATH`. Modern linkers write `RUNPATH` by
 | --- | --- |
 | The CUDA toolkit | Through the RPATH of the executable. The directory is in it because the node links nvJPEG and NPP. |
 | The depth engine | `libk4a` opens it by name. It finds it through its own `RUNPATH` `$ORIGIN/libk4a1.4`, where Microsoft's package puts it. A depth engine in another directory has to be on `LD_LIBRARY_PATH`. |
+| nvJPEG, NPP, the CUDA runtime (wheel) | The programs link none of them. They open the module `libxblick-azure-kinect-cuda.so` from `../lib` when `--cuda-device` names a GPU. The module finds NVIDIA's libraries through its `DT_RPATH` in NVIDIA's pip packages of the same `site-packages` (`nvidia/{nvjpeg,npp,cuda_runtime}/lib`). |
+| The depth engine (wheel) | The program opens it at its start by its path in the node's cache directory, `depth-engine-1.4.1/libdepthengine.so.2.0`, where `xblick-azure-kinect-setup` puts it. `libk4a` asks for it by its soname later and gets the loaded one. |
 
 Installed programs keep these directories, because the project sets `CMAKE_INSTALL_RPATH_USE_LINK_PATH`. They find
 this project's own libraries in `../lib`. Without that setting CMake drops the directories at install.

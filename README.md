@@ -13,6 +13,10 @@ and publishes the bodies that the Azure Kinect Body Tracking SDK finds.
 The node produces each representation of a stream only while a subscriber asks for it. It needs no X server, so it
 runs on a headless camera PC.
 
+Installed from its Python wheel, the node needs one setup command after the install, `xblick-azure-kinect-setup`. It
+downloads Microsoft's depth engine, which is under Microsoft's licence terms and not part of the wheel
+([Optional: the Python wheel](https://github.com/xblick/xblick-azure-kinect#optional-the-python-wheel)).
+
 ## What it publishes
 
 The node publishes below one base name. The default base is `cam/azurekinect`.
@@ -77,6 +81,35 @@ repository and is under Microsoft's licence terms. The script prints the name of
 starts that download.
 [docs/build.md](docs/build.md) lists every download with its source and terms, the manual build with CMake and what
 each test checks.
+
+### Optional: the Python wheel
+
+The wheel `xblick-azure-kinect` holds the two programs, built, with the libraries that they need. It needs no
+compiler and no CUDA toolkit. Install a wheel file, built by `tools/build_wheel.sh` or by the CI (artifact
+`xblick-azure-kinect-wheel`), with `uv` or `pip`:
+
+```bash
+uv tool install --with-executables-from xblick ./xblick_azure_kinect-0.4.1-py3-none-manylinux_2_28_x86_64.whl
+xblick-azure-kinect-setup     # once per PC: the depth engine from Microsoft, and what needs sudo
+xblick router &               # once per PC, unless a router runs already
+xblick-azure-kinect
+```
+
+- `xblick-azure-kinect-setup` downloads Microsoft's package `libk4a1.4` 1.4.1 with the pinned sha256 that
+  `tools/setup.sh` uses, prints the name and link of Microsoft's terms, and unpacks the depth engine into
+  `~/.cache/xblick/azure-kinect/depth-engine-1.4.1/`. The node loads it from there at its start. Without it, the node
+  stops and names the setup command. `XBLICK_HOME` moves the directory, as for every node.
+- The setup command prints the `sudo` commands for what is missing: the udev rule for the camera and the system
+  libraries `libgl1`, `libx11-6`, `libegl1` and `libudev1`.
+- The wheel needs Linux on x86-64 with glibc 2.28 or newer, Python 3.10 to 3.13, and an NVIDIA GPU with its driver,
+  525 or newer, for EGL and CUDA 12. NVIDIA's nvJPEG, NPP and CUDA runtime come from PyPI as dependencies of the
+  wheel, about 290 MB to download, most of it NPP.
+- `--cuda-device 0` is the default, as in a CUDA build. Without a usable GPU, the node stops with one line;
+  `--cuda-device none` decodes the colour on the CPU.
+- The wheel contains no SDK tools such as `k4arecorder`, no `xblick-points` and not the CMake package `xblick_k4a`.
+  These come with `tools/setup.sh`.
+- `pip install ./xblick_azure_kinect-<version>-py3-none-manylinux_2_28_x86_64.whl` in a venv installs the same
+  commands. `xblick` comes with it as a dependency.
 
 ## Run
 

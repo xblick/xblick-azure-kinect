@@ -2,6 +2,21 @@
 
 *The node's [overview](README.md). Versions before 0.3.0 are described in the git history only.*
 
+* **0.4.1** An optional install without a build: the Python wheel `xblick-azure-kinect` (README, Install).
+  `tools/setup.sh` stays the way to build from source.
+
+  - The wheel holds `xblick-azure-kinect` and `xblick-azure-kinect-parameters` with the same options as a CUDA
+    build, `libk4a` and `libk4arecord` built from the Sensor SDK's MIT source (v1.4.2), and a CUDA module that
+    loads nvJPEG, NPP and the CUDA runtime from NVIDIA's PyPI packages, its dependencies. It contains no depth
+    engine and no NVIDIA file. `tools/build_wheel.sh` builds it in manylinux_2_28; the CI builds and checks it.
+  - `xblick-azure-kinect-setup` downloads Microsoft's package `libk4a1.4` 1.4.1 (pinned sha256), unpacks the depth
+    engine into the node's cache directory and prints the `sudo` commands for the udev rule and missing system
+    libraries. The wheel's node loads the depth engine from there at its start and stops with one line naming the
+    setup command when it is missing.
+  - Both builds: with `--cuda-device N`, the node checks the driver and the GPU before it opens its session and
+    stops with one line that names what is missing and `--cuda-device none`. Before, the error came from the first
+    CUDA call and said "CUDA driver version is insufficient" also when there was no driver.
+
 * **0.4.0** Body tracking moved to the repository [xblick-k4abt](https://github.com/xblick/xblick-k4abt), which
   carries the history of its files and continues as xblick-k4abt 0.4.0. This repository builds the camera node, the
   parameter client and their tools only. The camera node's behaviour, streams, options, parameters and the

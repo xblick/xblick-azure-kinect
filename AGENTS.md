@@ -21,6 +21,9 @@ cmake --build build
 ctest --test-dir build --output-on-failure   # no LD_LIBRARY_PATH needed with the SDK laid out as Microsoft's package
 cmake --install build --prefix <xblick_k4a>   # the CMake package xblick_k4a (xblick_k4a_DIR)
 tools/check_references.sh                         # the reference check of the CI
+# The Python wheel (optional install; in quay.io/pypa/manylinux_2_28_x86_64, packages: the script's header). Details:
+# docs/build.md. Its checks, in the environment that has the wheel: python -m pytest tests/test_wheel.py
+tools/build_wheel.sh <xblick checkout> <out dir> <work dir>
 ```
 
 Durations: not recorded. Give `ctest` a timeout.
@@ -42,6 +45,9 @@ Durations: not recorded. Give `ctest` a timeout.
   example, PyTorch's CUDA libraries for every program of the workspace. The depth engine, which `libk4a` opens
   by name, comes through libk4a's own RUNPATH `$ORIGIN/libk4a1.4` (the layout of Microsoft's package); only a
   depth engine elsewhere needs `LD_LIBRARY_PATH`. `install/env.sh` sets PATH only.
+- The wheel contains no depth engine and no NVIDIA file (`tools/build_wheel.sh` checks it). Its `libk4a` is built from
+  the Sensor SDK's source; `xblick-azure-kinect-setup` fetches the depth engine on the user's PC. Its options and
+  behaviour are those of a CUDA build; what differs is in `src/wheel.cpp` only.
 - `tools/setup.sh` pins every download (file, URL, sha256 in `pins`). A new version needs its sha256 and the table
   in docs/build.md. No sudo in it: what needs root it checks and prints. Microsoft's and NVIDIA's binaries: print the
   terms' name and link when the download starts (no accept flag).
@@ -61,6 +67,8 @@ Durations: not recorded. Give `ctest` a timeout.
 | Two programs on one device | Only one program can open a device. | No other driver may open the same camera. |
 | CUDA ring in its own process | The process that created a CUDA ring cannot open it. | The `offline` test reads it from `test_k4a_cuda_reader`, a separate process. |
 | NFS | Do not build or write large outputs on NFS. | Build and write large outputs on a local disk. |
+| Wheel beside NVIDIA's packages elsewhere | The node stops: "cannot load nvJPEG and NPP". | The CUDA module's RPATH names `../../nvidia/*/lib` of its own `site-packages`. pip `--user` beside system packages, `--system-site-packages` and uv `--link-mode symlink` break that. |
+| Sensor SDK with a new compiler or CMake 4 | `-Werror` failures; glfw's policy error. | `tools/build_wheel.sh` builds it with GCC 9 (gcc-toolset-9) and CMake 3.31. |
 
 ## Layout
 
@@ -72,8 +80,10 @@ Durations: not recorded. Give `ctest` a timeout.
 | `src/depth_to_color.*` | `depth_to_color(_rect)` on the CPU (SDK's transformation only with `--sdk-depth-to-color`) |
 | `src/jpeg.*`, `nvjpeg_decoder.*` | MJPEG handling, nvJPEG decoding |
 | `src/egl_glx.cpp` | EGL stand-in for the depth engine's Xlib/GLX |
+| `src/gpu_rectify.cpp`, `cuda_module.hpp`, `wheel.*` | `color_rect` on the GPU (NPP); the wheel's CUDA module and depth engine |
+| `python/xblick_azure_kinect/`, `pyproject.toml` | the wheel's commands, `sdk.py`: `xblick-azure-kinect-setup` |
 | `tests/`, `tests/data/k4a_test_calibration.json` | `offline`, `parameters` tests |
-| `tools/` | `setup.sh`, benchmark, `depth_to_color` check and mirror, `check_references.sh` |
+| `tools/` | `setup.sh`, `build_wheel.sh`, benchmark, `depth_to_color` check and mirror, `check_references.sh` |
 | `docs/` | human documentation |
 
 ## Defaults
